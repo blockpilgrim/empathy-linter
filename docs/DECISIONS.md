@@ -32,6 +32,13 @@ Record of significant architectural decisions made during implementation.
 **Decision:** Use a TipTap `Mark` extension (inline `<span>`) instead of a `Node` extension (block-level element) for empathy highlights.
 **Rationale:** Pulp's `ProvocationExtension` is a block-level atom node that inserts standalone blocks between paragraphs. The empathy linter needs inline phrase-level highlights that wrap existing text without modifying document structure. Marks are the correct ProseMirror primitive for this — they decorate text ranges rather than creating new content. Key behavioral properties: `inclusive: false` prevents highlight spreading at boundaries, `excludes: "empathyFlag"` prevents overlapping marks.
 
+## AD-005: Block separator in phrase matching to prevent cross-paragraph false matches
+
+**Date:** 2026-03-13
+**Phase:** 1C (Editor State Management)
+**Decision:** Use `doc.textBetween(0, doc.content.size, "\n")` with a newline block separator instead of `doc.textContent` when building the searchable text for phrase matching in `applyFlags()`.
+**Rationale:** ProseMirror's `doc.textContent` concatenates paragraph text with no separator between blocks. This means a phrase search could falsely match text that straddles a paragraph boundary (e.g., last word of paragraph 1 + first word of paragraph 2). Since LLM-returned phrases never contain newlines, inserting `"\n"` between blocks prevents these cross-boundary false matches while keeping position mapping correct.
+
 ## AD-006: XML-style delimiters for user input in prompts
 
 **Date:** 2026-03-13
@@ -46,13 +53,6 @@ Record of significant architectural decisions made during implementation.
 **Decision:** Derive all TypeScript types for LLM output from Zod schemas using `z.infer<typeof Schema>` in `lib/schemas.ts`. Consuming modules import types from there rather than defining local interfaces.
 **Rationale:** The Zod schemas serve double duty — runtime validation (for `streamObject`/`streamText` structured output) and compile-time types. Defining types separately risks drift between the validation shape and the TypeScript interface. This was demonstrated during Phase 2A when `EmpathyFlagInput` was consolidated from a local interface in `apply-flags.ts` to a schema-inferred type in `schemas.ts`.
 
-## AD-005: Block separator in phrase matching to prevent cross-paragraph false matches
-
-**Date:** 2026-03-13
-**Phase:** 1C (Editor State Management)
-**Decision:** Use `doc.textBetween(0, doc.content.size, "\n")` with a newline block separator instead of `doc.textContent` when building the searchable text for phrase matching in `applyFlags()`.
-**Rationale:** ProseMirror's `doc.textContent` concatenates paragraph text with no separator between blocks. This means a phrase search could falsely match text that straddles a paragraph boundary (e.g., last word of paragraph 1 + first word of paragraph 2). Since LLM-returned phrases never contain newlines, inserting `"\n"` between blocks prevents these cross-boundary false matches while keeping position mapping correct.
-
 ## AD-008: Validate input before consuming rate-limit tokens
 
 **Date:** 2026-03-13
@@ -66,3 +66,17 @@ Record of significant architectural decisions made during implementation.
 **Phase:** 2B (API Route)
 **Decision:** `MAX_REQUESTS` (20) and `WINDOW_MS` (1 hour) are defined as module-level constants in `lib/rate-limit.ts`, not in `lib/config.ts`.
 **Rationale:** These constants are specific to the rate-limiting concern and have no consumers outside the module (and its tests). Colocating them keeps the module self-contained. `lib/config.ts` is reserved for app-wide configuration (model name, debounce timing, text limits) that multiple modules reference.
+
+## AD-010: Manual fetch + parsePartialJson for client-side stream consumption
+
+**Date:** 2026-03-13
+**Phase:** 3 (Ambient Scanning Pipeline)
+**Decision:** Consume the `/api/lint` streaming response using manual `fetch` + `ReadableStream` reader + `parsePartialJson` from the `ai` package, rather than the `useObject` hook from `ai/react`.
+**Rationale:** The `useObject` hook does not exist in `ai@^6.0.93` (the Vercel AI SDK v6 version used in this project). The manual approach gives full control over AbortController lifecycle, debounce integration, and progressive flag application — all of which are needed for the ambient scanning pipeline. `parsePartialJson` reconstructs incomplete JSON objects from the text stream, enabling progressive UI updates as flags arrive.
+
+## AD-011: AbortController identity check for safe loading state cleanup
+
+**Date:** 2026-03-13
+**Phase:** 3 (Ambient Scanning Pipeline)
+**Decision:** In the `finally` block of `analyzeText`, compare the controller to the current ref value (`abortControllerRef.current === controller`) before clearing `isAnalyzing` state.
+**Rationale:** When a new analysis request starts while a previous one is in-flight, the new request aborts the old controller and replaces the ref. Without the identity check, the old request's `finally` block would set `isAnalyzing(false)` even though the new request is still active — causing the loading indicator to flicker off and back on. The identity check ensures only the most recent request controls the loading state.

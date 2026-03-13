@@ -38,9 +38,15 @@ No critical issues found. The streaming pipeline, abort logic, and error handlin
 
 ---
 
-## Warnings (Should Fix)
+## Resolution Status
 
-### W1. Loading indicator is invisible to assistive technology
+All warnings (W1-W3) and suggestions S1, S2, S5 were addressed in commit `426645d` before merge. The findings below are preserved for context but are **resolved**.
+
+---
+
+## Warnings (Should Fix) — All Resolved
+
+### W1. Loading indicator is invisible to assistive technology — RESOLVED
 
 **File:** `app/page.tsx`, line 183
 
@@ -54,7 +60,7 @@ Adding `role="status"` creates a live region that screen readers will automatica
 <div className="flex items-center gap-1" role="status" aria-label="Analyzing text">
 ```
 
-### W2. `setFlags()` on every stream chunk triggers unnecessary re-renders
+### W2. `setFlags()` on every stream chunk triggers unnecessary re-renders — RESOLVED
 
 **File:** `app/page.tsx`, lines 13, 92, 137
 
@@ -70,7 +76,7 @@ The `flags` state likely exists for future use (Phase 4 popovers may need the fl
 
 2. **If Phase 4 does not need `flags` state:** Remove the `flags` state entirely. The marks are the source of truth for displayed highlights. If the popover reads flag data from the mark attributes (as designed in Phase 1B), React state is redundant.
 
-### W3. `loading-dot` animation not covered by `prefers-reduced-motion`
+### W3. `loading-dot` animation not covered by `prefers-reduced-motion` — RESOLVED
 
 **File:** `app/globals.css`, lines 279-285 and 339-345
 
@@ -91,9 +97,9 @@ The `@media (prefers-reduced-motion: reduce)` block covers `.hero-enter` and `.p
 
 ---
 
-## Suggestions (Consider)
+## Suggestions (Consider) — S1, S2, S5 Resolved
 
-### S1. Partial flags may have undefined `reason` and `suggestion` during streaming
+### S1. Partial flags may have undefined `reason` and `suggestion` during streaming — RESOLVED
 
 **File:** `app/page.tsx`, line 86
 
@@ -112,7 +118,7 @@ This is not a crash risk — it is a data quality concern. Two options:
 
 2. **Accept it as a progressive UX tradeoff:** The marks appear slightly before their metadata is complete, which feels responsive. The popover (Phase 4) can show a "loading" state for flags with missing metadata. This is arguably the better UX.
 
-### S2. `applyFlags()` called on every stream chunk does redundant work
+### S2. `applyFlags()` called on every stream chunk does redundant work — RESOLVED
 
 **File:** `app/page.tsx`, line 91
 
@@ -157,7 +163,7 @@ catch (err: unknown) {
 
 Note: `reader` is scoped inside the `try` block so it is not accessible in the `catch`. Hoisting the declaration or restructuring would be needed.
 
-### S5. Misleading test name in `prompt-eval.test.ts`
+### S5. Misleading test name in `prompt-eval.test.ts` — RESOLVED
 
 **File:** `lib/eval/prompt-eval.test.ts`, lines 65-84
 
@@ -190,7 +196,7 @@ The implementation follows CONVENTIONS.md closely:
 | Text-change guard via ref | Followed (lastAnalyzedTextRef seeded with demo text) |
 | Cleanup on unmount | Followed (useEffect cleanup clears timer and aborts) |
 | Design token font sizes via inline `style` | Followed (lines 151, 158, 178) |
-| `aria-label` on loading indicator | Followed (present but insufficient without `role`) |
+| `role="status"` + `aria-label` on loading indicator | Followed |
 | Demo flags guard with ref | Followed (demoFlagsApplied ref) |
 | No `useObject` from `ai/react` | Followed (manual fetch + reader) |
 | Loading dots in footer | Followed (non-disruptive positioning) |
