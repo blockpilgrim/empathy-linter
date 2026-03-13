@@ -43,6 +43,9 @@ lib/
   schemas.ts              # Zod schemas (EmpathyFlagSchema, LintResultSchema) + inferred types (EmpathyFlagInput, LintResult)
   config.ts               # Constants: model name, debounce timing, max text length
   demo-content.ts         # Pre-loaded jargon-dense demo text and pre-computed highlight flags
+  rate-limit.ts           # In-memory IP-based rate limiter (checkRateLimit)
+  eval/
+    golden-dataset.ts     # Golden evaluation dataset (7 samples) for prompt quality testing
 ```
 
 ## Key Architecture Decisions

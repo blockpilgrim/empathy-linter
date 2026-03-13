@@ -154,20 +154,20 @@ Phase 0: Bootstrap
 
 ### 2B. API Route
 
-- [ ] **2.4** Build `app/api/lint/route.ts`:
+- [x] **2.4** Build `app/api/lint/route.ts`:
   - Accept POST with `{ text: string }`
   - Validate text length (reject > `MAX_TEXT_LENGTH` with 400)
   - Use `streamObject` from Vercel AI SDK with the Zod schema (this streams partial JSON as it's generated — the client gets flags incrementally)
   - Return the stream response
   - Reference: `pulp/app/api/pulp/route.ts` for the Anthropic provider setup pattern
   - **Decision:** Use `streamObject` (not `generateObject`) so flags appear on the client one at a time as Claude identifies them, creating a satisfying progressive-reveal effect.
-- [ ] **2.5** Add basic rate limiting — simple in-memory IP-based counter (no Redis needed for prototype). Limit to ~20 requests per IP per hour.
+- [x] **2.5** Add basic rate limiting — simple in-memory IP-based counter (no Redis needed for prototype). Limit to ~20 requests per IP per hour.
   - Alternatively, skip rate limiting entirely for the prototype and rely on the `ANTHROPIC_API_KEY` being private. Decide based on time.
 
 ### 2C. Prompt Tuning
 
-- [ ] **2.6** Create a golden test dataset: 5 jargon-heavy paragraphs sourced from real open-source docs (Kubernetes, AWS, React internals). Manually annotate what _should_ be flagged.
-- [ ] **2.7** Iterate on the system prompt by running the test paragraphs through `/api/lint` and comparing output to annotations. Tune until:
+- [x] **2.6** Create a golden test dataset: 5 jargon-heavy paragraphs sourced from real open-source docs (Kubernetes, AWS, React internals). Manually annotate what _should_ be flagged.
+- [x] **2.7** Iterate on the system prompt by running the test paragraphs through `/api/lint` and comparing output to annotations. Tune until:
   - **Precision:** ≥80% of flags are genuinely useful (low false positive rate)
   - **Recall:** Catches obvious acronyms and assumed knowledge
   - **Exact match:** `exact_phrase` is always a verbatim substring of the input

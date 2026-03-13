@@ -52,3 +52,17 @@ Record of significant architectural decisions made during implementation.
 **Phase:** 1C (Editor State Management)
 **Decision:** Use `doc.textBetween(0, doc.content.size, "\n")` with a newline block separator instead of `doc.textContent` when building the searchable text for phrase matching in `applyFlags()`.
 **Rationale:** ProseMirror's `doc.textContent` concatenates paragraph text with no separator between blocks. This means a phrase search could falsely match text that straddles a paragraph boundary (e.g., last word of paragraph 1 + first word of paragraph 2). Since LLM-returned phrases never contain newlines, inserting `"\n"` between blocks prevents these cross-boundary false matches while keeping position mapping correct.
+
+## AD-008: Validate input before consuming rate-limit tokens
+
+**Date:** 2026-03-13
+**Phase:** 2B (API Route)
+**Decision:** The `/api/lint` route handler validates input (JSON parse, text presence, type, length) before calling `checkRateLimit(ip)`. Only requests that pass all validation checks consume a rate-limit token.
+**Rationale:** If rate limiting runs first, malformed or invalid requests consume tokens. An attacker could exhaust another user's rate limit by sending garbage payloads from behind the same proxy. Since validation is cheap (no I/O, no AI calls), running it first has no cost and prevents token waste. Identified as a critical fix during the Phase 2B code review.
+
+## AD-009: Rate limiter constants colocated in module
+
+**Date:** 2026-03-13
+**Phase:** 2B (API Route)
+**Decision:** `MAX_REQUESTS` (20) and `WINDOW_MS` (1 hour) are defined as module-level constants in `lib/rate-limit.ts`, not in `lib/config.ts`.
+**Rationale:** These constants are specific to the rate-limiting concern and have no consumers outside the module (and its tests). Colocating them keeps the module self-contained. `lib/config.ts` is reserved for app-wide configuration (model name, debounce timing, text limits) that multiple modules reference.

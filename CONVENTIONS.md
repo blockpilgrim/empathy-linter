@@ -95,7 +95,7 @@ This document tracks established patterns, anti-patterns, and architectural conv
 
 ## API Routes
 
-- **Validation before AI call** — validate input (presence, type, length) and check rate limits before creating the Anthropic provider or calling `streamObject`. Fail fast with appropriate 4xx status codes.
+- **Validation before rate limiting, rate limiting before AI call** — validate input (JSON parse, presence, type, length) first so invalid requests don't consume rate-limit tokens. Then check rate limits. Then create the Anthropic provider and call `streamObject`. Fail fast with appropriate 4xx status codes.
 - **`streamObject` for structured LLM output** — use `streamObject` from `ai` (not `generateObject`) with a Zod schema. This streams partial objects to the client as the LLM generates them, enabling progressive UI updates.
 - **`toTextStreamResponse()` for streaming** — return `result.toTextStreamResponse()` from the route handler. Pass custom headers (e.g., rate-limit info) via the `init` parameter.
 - **`createAnthropic` with server-side key** — instantiate the provider in the route handler using `process.env.ANTHROPIC_API_KEY`. Check the key exists and return 500 if missing (don't expose the reason to the client beyond "Server configuration error").
@@ -105,7 +105,7 @@ This document tracks established patterns, anti-patterns, and architectural conv
 ## Rate Limiting
 
 - **In-memory Map-based rate limiter** — sufficient for a stateless prototype on a single serverless instance. For production, swap to Redis/Vercel KV.
-- **Synchronous `checkRateLimit(ip)` function** — returns `{ allowed: boolean, remaining: number }`. No async needed for in-memory storage.
+- **Synchronous `checkRateLimit(ip)` function** — returns `{ allowed: boolean, remaining: number, retryAfter: number }`. `retryAfter` is seconds until the rate-limit window resets (0 when `allowed` is true). No async needed for in-memory storage.
 - **Sweep expired entries on each check** — iterate the Map and delete entries where `resetAt <= Date.now()`. Simple and prevents unbounded memory growth.
 - **Constants colocated in the module** — `MAX_REQUESTS` and `WINDOW_MS` live in `lib/rate-limit.ts` (not `lib/config.ts`) since they're rate-limit-specific, not app-wide configuration.
 
