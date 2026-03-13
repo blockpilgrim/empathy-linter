@@ -53,7 +53,7 @@ Browser (Zero-Auth State)
     └── Debounced API Calls
         └── fetch /api/lint (Route Handler)
             ├── Vercel AI SDK (streamObject)
-            ├── Anthropic API (Claude 3.5 Sonnet)
+            ├── Anthropic API (Claude 4.6 Sonnet)
             └── Streams JSON array back to Client
 
 ```

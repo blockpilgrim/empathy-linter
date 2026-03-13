@@ -1,5 +1,7 @@
 # Phase 0 Bootstrap Review
 
+> **Note:** This review was written against a pre-fix snapshot. All Warning and Suggestion items (W1-W4, S1, S4) were addressed in commit `c4e8501`. The findings below are retained for historical context but no longer reflect the current code state.
+
 **Reviewer:** Claude Opus 4.6 (automated)
 **Date:** 2026-03-13
 **Commit:** `39d0137` — bootstrap: initialize Next.js 16 project with TipTap, AI SDK, and design system
