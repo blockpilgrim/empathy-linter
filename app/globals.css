@@ -1,0 +1,358 @@
+@import "tailwindcss";
+
+/* Typography: iA Writer Mono & Quattro (SIL Open Font License)
+   https://github.com/iaolo/iA-Fonts — a modification of IBM Plex by iA */
+
+/* ========== Custom Properties ========== */
+:root {
+  /* Backgrounds */
+  --background: #f5f1eb;
+  --surface: #faf8f4;
+  --surface-hover: #f0ece4;
+
+  /* Text */
+  --foreground: #2c2825;
+  --foreground-secondary: #4a4543;
+  --muted: #8a8279;
+  --muted-light: #b5ada4;
+
+  /* Accent — teal / sage green (empathetic, approachable) */
+  --accent: #2a7d6e;
+  --accent-dark: #1e5c51;
+  --accent-light: #e0f2ed;
+  --accent-highlight: #b8e6d8;
+
+  /* Accent shadow (for focus states) */
+  --accent-shadow: rgba(42, 125, 110, 0.2);
+
+  /* Borders */
+  --border: #ddd5c9;
+  --border-light: #e8e2d8;
+
+  /* Gradient endpoint */
+  --background-edge: #ede7dc;
+
+  /* Paper texture opacity */
+  --texture-opacity: 0.35;
+
+  /* Type Scale */
+  --type-3xs: 0.625rem;   /* 10px — footer, fine print */
+  --type-2xs: 0.6875rem;  /* 11px — labels, metadata, timestamps */
+  --type-xs: 0.75rem;     /* 12px — captions, hints, nav links */
+  --type-sm: 0.8125rem;   /* 13px — buttons, UI text */
+  --type-base: 0.9375rem; /* 15px — secondary body text */
+  --type-md: 1.0625rem;   /* 17px — subheaders */
+  --type-lg: 1.125rem;    /* 18px — writing surface, draft text */
+  --type-xl: 1.25rem;     /* 20px — section headers */
+  --type-2xl: 1.75rem;    /* 28px — page titles */
+}
+
+/* ========== Theme Bridge (Tailwind v4) ========== */
+/* Colors use `inline` — values resolve from :root where they're defined */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-muted: var(--muted);
+  --color-muted-light: var(--muted-light);
+  --color-border: var(--border);
+  --color-border-light: var(--border-light);
+  --color-accent: var(--accent);
+  --color-accent-dark: var(--accent-dark);
+  --color-accent-light: var(--accent-light);
+  --color-accent-highlight: var(--accent-highlight);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+}
+
+/* Fonts use non-inline @theme — generates :root CSS vars that resolve
+   lazily at use-site, where next/font's body-scoped vars are available */
+@theme {
+  --font-sans: var(--font-quattro), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-ia-mono), ui-monospace, monospace;
+}
+
+/* ========== Base ========== */
+html {
+  background: radial-gradient(ellipse at 50% 30%, var(--background) 0%, var(--background-edge) 100%);
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-quattro), ui-sans-serif, system-ui, sans-serif;
+  color: var(--foreground);
+  font-feature-settings: "kern" 1, "liga" 1;
+  position: relative;
+  min-height: 100%;
+}
+
+/* Paper texture — subtle SVG noise grain */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--texture-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  z-index: 0;
+}
+
+/* Ensure page content sits above the texture overlay */
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ========== Selection ========== */
+::selection {
+  background: var(--accent-highlight);
+  color: var(--foreground);
+}
+
+/* ========== Scrollbar ========== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-light);
+}
+
+/* ========== TipTap Editor (Writing Surface) ========== */
+.tiptap-editor-wrapper .tiptap {
+  font-family: var(--font-quattro);
+  font-size: var(--type-lg);
+  line-height: 1.8;
+  color: var(--foreground);
+  caret-color: var(--accent);
+  min-height: 300px;
+  padding: 1rem 0;
+}
+
+.tiptap-editor-wrapper .tiptap:focus {
+  outline: none;
+}
+
+.tiptap-editor-wrapper .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted-light);
+  font-style: italic;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap-editor-wrapper .tiptap p {
+  margin: 0 0 1em 0;
+}
+
+.tiptap-editor-wrapper .tiptap p:last-child {
+  margin-bottom: 0;
+}
+
+/* ========== Empathy Highlights (inline marks in editor) ========== */
+.empathy-highlight {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 12%,
+    var(--accent-highlight) 12%,
+    var(--accent-highlight) 88%,
+    transparent 88%,
+    transparent 100%
+  );
+  cursor: pointer;
+  border-radius: 0.15em 0.4em 0.3em 0.2em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  padding: 0.15em 0.3em;
+  margin: 0 -0.3em;
+  transition: opacity 0.2s ease;
+}
+
+.empathy-highlight:hover {
+  opacity: 0.8;
+}
+
+/* ========== Buttons ========== */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.25rem;
+  font-family: var(--font-ia-mono);
+  font-size: var(--type-sm);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+  background: transparent;
+  border: 1px solid var(--foreground-secondary);
+  border-radius: 1px;
+  cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+  transition: transform 0.05s ease;
+}
+
+.btn-primary:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Secondary / ghost button — same size as primary, lighter visual weight */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.25rem;
+  font-family: var(--font-ia-mono);
+  font-size: var(--type-sm);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 1px;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-ghost:hover {
+  color: var(--foreground);
+  border-color: var(--foreground-secondary);
+}
+
+.btn-ghost:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-ghost:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ========== Links ========== */
+.link-subtle {
+  color: var(--muted);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.link-subtle:hover {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+}
+
+/* ========== Animations ========== */
+
+/* Loading */
+@keyframes loadingFade {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.8; }
+}
+
+.loading-dot {
+  width: 3px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: loadingFade 1.5s ease-in-out infinite;
+}
+
+/* ========== Hero Entrance ========== */
+@keyframes heroEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero-enter {
+  opacity: 0;
+  animation: heroEnter 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+.stagger-0 { animation-delay: 0ms; }
+.stagger-1 { animation-delay: 100ms; }
+.stagger-2 { animation-delay: 200ms; }
+.stagger-3 { animation-delay: 300ms; }
+
+/* ========== Popover ========== */
+@keyframes popoverIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.popover-enter {
+  animation: popoverIn 0.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+/* ========== Icon Buttons ========== */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--muted-light);
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.15s ease;
+}
+
+.icon-btn:hover {
+  color: var(--foreground);
+  background: var(--surface-hover);
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ========== Reduced Motion ========== */
+@media (prefers-reduced-motion: reduce) {
+  .hero-enter,
+  .popover-enter {
+    animation-duration: 0.01s !important;
+    animation-delay: 0ms !important;
+  }
+}
+
+/* ========== Mobile ========== */
+@media (max-width: 640px) {
+  .tiptap-editor-wrapper .tiptap {
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+
+  .btn-primary {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+  }
+}
