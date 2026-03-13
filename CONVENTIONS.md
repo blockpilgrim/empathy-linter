@@ -47,6 +47,11 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Editor component exposes `content` (initial HTML) and `onUpdate` (plain text callback)** — keeps the component reusable. State management lives in the parent.
 - **Design token font sizes via inline `style`** — prefer `style={{ fontSize: "var(--type-2xs)" }}` over Tailwind bracket syntax (`text-[length:var(--type-2xs)]`) for readability when referencing CSS custom properties not bridged to `@theme`.
 
+## Page Layout
+
+- **Single `<main>` wrapper** holds `max-w-2xl mx-auto px-6` — children (header, section, footer) inherit the constraint. Don't repeat layout classes on each section.
+- **Entrance animations** use `hero-enter stagger-N` classes (N = 0–3) defined in `globals.css`. Apply to top-level page sections for staggered fade-in on load.
+
 ## Anti-Patterns
 
 - **Do NOT use `create-next-app`** in an existing repo — it conflicts with existing files and git history.
