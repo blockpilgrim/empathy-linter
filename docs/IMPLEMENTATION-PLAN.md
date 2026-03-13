@@ -29,14 +29,14 @@ Phase 0: Bootstrap
 > **Depends on:** Nothing.
 > **Estimated effort:** ~20 min.
 
-- [ ] **0.1** Initialize Next.js 16 project with App Router (`npx create-next-app@latest`)
+- [x] **0.1** Initialize Next.js 16 project with App Router (manual setup — not `create-next-app`, see AD-001)
   - TypeScript, Tailwind CSS v4, App Router, `src/` directory: no (keep flat like Pulp)
-- [ ] **0.2** Install core dependencies:
+- [x] **0.2** Install core dependencies:
   ```
   @tiptap/react @tiptap/starter-kit @tiptap/pm @tiptap/extension-placeholder
   ai @ai-sdk/anthropic zod
   ```
-- [ ] **0.3** Create project directory structure:
+- [x] **0.3** Create project directory structure:
   ```
   app/
     api/lint/route.ts       ← AI route handler
@@ -53,11 +53,11 @@ Phase 0: Bootstrap
     config.ts               ← Constants (model, debounce timing, etc.)
     demo-content.ts         ← Pre-loaded demo paragraph
   ```
-- [ ] **0.4** Set up environment config: `.env.local` with `ANTHROPIC_API_KEY`
-- [ ] **0.5** Set up global CSS foundation — port Pulp's design token structure (CSS variables for colors, typography) and paper texture. Adapt color palette to differentiate from Pulp while keeping the warmth.
+- [x] **0.4** Set up environment config: `.env.local` with `ANTHROPIC_API_KEY`
+- [x] **0.5** Set up global CSS foundation — port Pulp's design token structure (CSS variables for colors, typography) and paper texture. Adapted color palette to teal/sage green (see AD-002).
   - Reference: `pulp/app/globals.css` (lines with `--bg`, `--text`, `--accent`, font-face declarations)
-- [ ] **0.6** Port font setup from Pulp (iA Writer Quattro for the editor, system fonts for UI) or choose a distinct set. Copy `fonts/` directory if reusing.
-- [ ] **0.7** Verify: `npm run dev` serves a blank page at `localhost:3000`.
+- [x] **0.6** Port font setup from Pulp (iA Writer Quattro + iA Writer Mono via `next/font/local`). Font files in `/fonts/` (woff2 only).
+- [x] **0.7** Verify: `npm run dev` serves page at `localhost:3000`. `npm run build` passes clean.
 
 ---
 

@@ -22,7 +22,7 @@ This document tracks established patterns, anti-patterns, and architectural conv
 
 - **iA Writer Quattro** (`--font-quattro`) — primary editor/body font, loaded via `next/font/local`.
 - **iA Writer Mono** (`--font-ia-mono`) — UI/mono font, loaded via `next/font/local`.
-- Font files live in `/fonts/` (woff2 format for web use).
+- Font files live in `/fonts/` (woff2 only — .eot and .woff removed as dead weight).
 
 ## Dependencies
 
@@ -30,7 +30,17 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - `zod` added for schema validation (not present in Pulp).
 - No auth libraries (Clerk, etc.) — this is a stateless prototype.
 
+## Security
+
+- **Security headers** applied site-wide in `next.config.ts` via `headers()`: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`.
+- Apply to `/:path*` (all routes), not just API routes.
+
+## PostCSS
+
+- Tailwind v4 uses `@tailwindcss/postcss` plugin in `postcss.config.mjs` (object-key format: `"@tailwindcss/postcss": {}`). This replaces v3's `tailwindcss` plugin.
+
 ## Anti-Patterns
 
 - **Do NOT use `create-next-app`** in an existing repo — it conflicts with existing files and git history.
 - **Do NOT add `src/` directory** — flat structure matches the reference project and keeps imports shorter.
+- **Do NOT commit .eot or .woff font files** — only .woff2 is used. Legacy formats add dead weight to git history.
