@@ -2,6 +2,8 @@ import { Mark, mergeAttributes } from "@tiptap/core";
 
 export const EmpathyFlag = Mark.create({
   name: "empathyFlag",
+  inclusive: false,
+  excludes: "empathyFlag",
 
   addAttributes() {
     return {

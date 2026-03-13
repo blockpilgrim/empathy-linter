@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   useEditor,
   EditorContent,
@@ -21,6 +21,9 @@ export default function Editor({
   onUpdate,
   onEditorReady,
 }: EditorProps) {
+  const onEditorReadyRef = useRef(onEditorReady);
+  onEditorReadyRef.current = onEditorReady;
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -50,9 +53,9 @@ export default function Editor({
 
   useEffect(() => {
     if (editor) {
-      onEditorReady?.(editor);
+      onEditorReadyRef.current?.(editor);
     }
-  }, [editor, onEditorReady]);
+  }, [editor]);
 
   return (
     <div className="tiptap-editor-wrapper">
