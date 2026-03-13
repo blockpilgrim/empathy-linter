@@ -122,7 +122,10 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **`parsePartialJson` from `ai` for streaming consumption** — the `toTextStreamResponse()` format streams text chunks that form valid JSON when concatenated. Accumulate chunks and use `parsePartialJson` to reconstruct partial objects mid-stream. This enables progressive highlight reveal as flags arrive.
 - **Text-change guard prevents redundant analysis** — store the last analyzed text in a ref. Skip the API call if the current text matches. Also seed this ref with the demo content on mount to avoid re-analyzing pre-loaded content.
 - **Cleanup on unmount** — clear the debounce timer and abort any in-flight request in the `useEffect` cleanup function. Prevents memory leaks and stale requests.
-- **Loading indicator in the footer** — three `.loading-dot` spans with staggered `animationDelay` provide a subtle pulsing indicator. Non-disruptive positioning in the footer keeps the editor area clean.
+- **Loading indicator in the footer** — three `.loading-dot` spans with staggered `animationDelay` provide a subtle pulsing indicator. Non-disruptive positioning in the footer keeps the editor area clean. Use `role="status"` for screen reader announcements.
+- **Filter streaming flags to complete objects** — `parsePartialJson` may return flags with `undefined` fields during streaming. Filter to flags where `exact_phrase`, `reason`, and `suggestion` are all truthy before calling `applyFlags()`.
+- **Only re-apply marks when a new flag arrives** — track `previousFlagCount` and only call `applyFlags()` when `completeFlags.length > previousFlagCount`. This reduces calls from ~30 (every chunk) to ~8 (once per new flag).
+- **Update React state once after streaming completes** — call `setFlags()` after the `while` loop, not on every chunk. Reduces unnecessary re-renders from ~30 to 1 per analysis cycle.
 
 ## Anti-Patterns
 
