@@ -64,8 +64,17 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Single `<main>` wrapper** holds `max-w-2xl mx-auto px-6` — children (header, section, footer) inherit the constraint. Don't repeat layout classes on each section.
 - **Entrance animations** use `hero-enter stagger-N` classes (N = 0–3) defined in `globals.css`. Apply to top-level page sections for staggered fade-in on load.
 
+## Applying Marks Programmatically
+
+- **Use `doc.descendants()` + transaction for document-wide mark removal** — `editor.chain().unsetAllMarks()` only operates on the current selection, not the entire document. To remove all empathyFlag marks, walk `doc.descendants()` and call `tr.removeMark()` for each marked text node.
+- **Map plain-text offsets to document positions via `doc.descendants()`** — ProseMirror's `doc.textContent` gives a flat string, but document positions include overhead for structural nodes (each `<p>` opening/closing tag consumes a position). Walk text nodes to track a running `textOffset` and compute `from`/`to` as `pos + (targetIndex - nodeTextStart)`.
+- **Batch mark operations into a single transaction** — dispatch one `tr` with all `addMark()` calls rather than dispatching per-flag. This avoids multiple re-renders and keeps the operation atomic.
+- **Generate flag IDs at apply-time, not at creation-time** — the `EmpathyFlagInput` type omits `id`; `applyFlags()` generates a `crypto.randomUUID()` for each flag when creating the mark. This keeps the input shape clean for both demo flags and LLM output.
+- **Guard demo flag application with a ref** — use a `useRef(false)` boolean to prevent double-application in React strict mode, which remounts components and fires effects twice in development.
+
 ## Anti-Patterns
 
 - **Do NOT use `create-next-app`** in an existing repo — it conflicts with existing files and git history.
 - **Do NOT add `src/` directory** — flat structure matches the reference project and keeps imports shorter.
 - **Do NOT commit .eot or .woff font files** — only .woff2 is used. Legacy formats add dead weight to git history.
+- **Do NOT use `editor.chain().unsetAllMarks()` for document-wide mark clearing** — it only affects the current selection. Use `doc.descendants()` with `tr.removeMark()` instead.
