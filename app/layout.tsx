@@ -17,7 +17,8 @@ const iaMono = localFont({
   src: [
     { path: "../fonts/iAWriterMonoS-Regular.woff2", weight: "400", style: "normal" },
     { path: "../fonts/iAWriterMonoS-Italic.woff2", weight: "400", style: "italic" },
-    { path: "../fonts/iAWriterMonoS-Bold.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/iAWriterMonoS-Bold.woff2", weight: "700", style: "normal" },
+    { path: "../fonts/iAWriterMonoS-BoldItalic.woff2", weight: "700", style: "italic" },
   ],
   variable: "--font-ia-mono",
   display: "swap",
