@@ -8,21 +8,18 @@ import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
-    // --- Rate limiting ---
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-    const { allowed, remaining } = checkRateLimit(ip);
-
-    if (!allowed) {
+    // --- Parse body (before rate limiting so malformed requests don't consume tokens) ---
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
       return NextResponse.json(
-        { error: "Rate limit exceeded — try again later" },
-        { status: 429, headers: { "X-RateLimit-Remaining": "0" } }
+        { error: "Invalid JSON in request body" },
+        { status: 400 }
       );
     }
 
-    // --- Input validation ---
-    const body = await req.json();
-    const { text } = body;
+    const { text } = body as { text?: unknown };
 
     if (!text || typeof text !== "string") {
       return NextResponse.json(
@@ -35,6 +32,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: `Text exceeds maximum length of ${MAX_TEXT_LENGTH} characters` },
         { status: 400 }
+      );
+    }
+
+    // --- Rate limiting (only valid requests consume tokens) ---
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const { allowed, remaining, retryAfter } = checkRateLimit(ip);
+
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded — try again later" },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Remaining": "0",
+            "Retry-After": String(retryAfter),
+          },
+        }
       );
     }
 

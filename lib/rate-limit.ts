@@ -25,6 +25,7 @@ const store = new Map<string, RateLimitEntry>();
 export function checkRateLimit(ip: string): {
   allowed: boolean;
   remaining: number;
+  retryAfter: number;
 } {
   const now = Date.now();
 
@@ -40,14 +41,15 @@ export function checkRateLimit(ip: string): {
   if (!entry || entry.resetAt <= now) {
     // First request in this window (or window expired)
     store.set(ip, { count: 1, resetAt: now + WINDOW_MS });
-    return { allowed: true, remaining: MAX_REQUESTS - 1 };
+    return { allowed: true, remaining: MAX_REQUESTS - 1, retryAfter: 0 };
   }
 
   entry.count += 1;
 
   if (entry.count > MAX_REQUESTS) {
-    return { allowed: false, remaining: 0 };
+    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+    return { allowed: false, remaining: 0, retryAfter };
   }
 
-  return { allowed: true, remaining: MAX_REQUESTS - entry.count };
+  return { allowed: true, remaining: MAX_REQUESTS - entry.count, retryAfter: 0 };
 }

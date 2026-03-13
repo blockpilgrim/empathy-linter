@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 // We need to reset the module-level store between tests.
 // Re-import the module fresh for each describe block via vi.resetModules.
@@ -7,6 +6,10 @@ describe("checkRateLimit", () => {
   beforeEach(() => {
     // Reset the module to clear the in-memory store
     vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("allows the first request from an IP", async () => {
@@ -48,6 +51,7 @@ describe("checkRateLimit", () => {
   });
 
   it("resets after the window expires", async () => {
+    vi.useFakeTimers();
     const { checkRateLimit: check } = await import("@/lib/rate-limit");
     for (let i = 0; i < 20; i++) {
       check("10.0.0.5");
@@ -55,13 +59,23 @@ describe("checkRateLimit", () => {
     expect(check("10.0.0.5").allowed).toBe(false);
 
     // Fast-forward past the 1-hour window
-    vi.useFakeTimers();
     vi.advanceTimersByTime(60 * 60 * 1000 + 1);
 
     const result = check("10.0.0.5");
     expect(result.allowed).toBe(true);
     expect(result.remaining).toBe(19);
+  });
 
-    vi.useRealTimers();
+  it("returns retryAfter in seconds when blocked", async () => {
+    vi.useFakeTimers();
+    const { checkRateLimit: check } = await import("@/lib/rate-limit");
+    for (let i = 0; i < 20; i++) {
+      check("10.0.0.6");
+    }
+    // Advance 10 minutes into the window
+    vi.advanceTimersByTime(10 * 60 * 1000);
+    const result = check("10.0.0.6");
+    expect(result.allowed).toBe(false);
+    expect(result.retryAfter).toBe(3000); // 50 minutes remaining = 3000 seconds
   });
 });

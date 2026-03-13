@@ -9,7 +9,7 @@ import { z } from "zod";
 export const EmpathyFlagSchema = z.object({
   exact_phrase: z
     .string()
-    .min(1)
+    .refine((s) => s.trim().length > 0, "exact_phrase must not be blank")
     .describe(
       "The exact phrase from the text that assumes reader knowledge — must be a verbatim substring"
     ),
