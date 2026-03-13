@@ -1,16 +1,130 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { parsePartialJson } from "ai";
 import type { Editor as TipTapEditor } from "@tiptap/react";
 import Editor from "@/components/editor";
 import { DEMO_CONTENT, DEMO_FLAGS } from "@/lib/demo-content";
 import { applyFlags } from "@/lib/apply-flags";
+import { DEBOUNCE_MS } from "@/lib/config";
 import type { EmpathyFlagInput } from "@/lib/schemas";
 
 export default function Home() {
   const [flags, setFlags] = useState<EmpathyFlagInput[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const editorRef = useRef<TipTapEditor | null>(null);
   const demoFlagsApplied = useRef(false);
+
+  // Refs for ambient scanning pipeline (don't trigger re-renders)
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
+  const lastAnalyzedTextRef = useRef<string>("");
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Clean up timer and in-flight request on unmount
+  useEffect(() => {
+    return () => {
+      clearTimeout(debounceTimerRef.current);
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
+  /**
+   * Fetch /api/lint with the given text and progressively apply flags
+   * as the streamed JSON arrives. Uses parsePartialJson to reconstruct
+   * partial objects from the text stream chunks.
+   */
+  const analyzeText = useCallback(async (text: string) => {
+    // Abort any in-flight request before starting a new one
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    setIsAnalyzing(true);
+
+    try {
+      const response = await fetch("/api/lint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        // Non-2xx response — log and bail. Don't throw to avoid noisy errors
+        // when the user hits rate limits or sends invalid input.
+        console.error("Lint API error:", response.status);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) return;
+
+      const decoder = new TextDecoder();
+      let accumulated = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        accumulated += decoder.decode(value, { stream: true });
+
+        // Parse the accumulated JSON text as a partial object.
+        // The server streams text chunks that, when concatenated, form
+        // the full JSON object { flags: [...] }. parsePartialJson can
+        // reconstruct partial results mid-stream.
+        const { value: parsed, state } = await parsePartialJson(accumulated);
+
+        if (
+          (state === "successful-parse" || state === "repaired-parse") &&
+          parsed &&
+          typeof parsed === "object" &&
+          "flags" in parsed &&
+          Array.isArray((parsed as { flags: unknown[] }).flags)
+        ) {
+          const partialFlags = (parsed as { flags: EmpathyFlagInput[] }).flags;
+
+          // Only apply if we have valid flags and the editor is still available
+          const editor = editorRef.current;
+          if (editor && partialFlags.length > 0) {
+            applyFlags(editor, partialFlags);
+            setFlags(partialFlags);
+          }
+        }
+      }
+    } catch (err: unknown) {
+      // AbortError is expected when we cancel a stale request — ignore it
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      console.error("Analysis failed:", err);
+    } finally {
+      // Only clear analyzing state if this controller is still the active one
+      // (a newer request may have already replaced it)
+      if (abortControllerRef.current === controller) {
+        setIsAnalyzing(false);
+      }
+    }
+  }, []);
+
+  /**
+   * Called on every editor update (keystroke, paste, etc.).
+   * Resets the debounce timer. When the timer fires, triggers analysis
+   * if the text has changed since the last analysis.
+   */
+  const handleTextUpdate = useCallback(
+    (text: string) => {
+      clearTimeout(debounceTimerRef.current);
+
+      debounceTimerRef.current = setTimeout(() => {
+        // Guard: skip if text hasn't changed since last analysis
+        if (text === lastAnalyzedTextRef.current) return;
+        lastAnalyzedTextRef.current = text;
+
+        analyzeText(text);
+      }, DEBOUNCE_MS);
+    },
+    [analyzeText]
+  );
 
   const handleEditorReady = useCallback((editor: TipTapEditor) => {
     editorRef.current = editor;
@@ -21,6 +135,10 @@ export default function Home() {
       demoFlagsApplied.current = true;
       applyFlags(editor, DEMO_FLAGS);
       setFlags(DEMO_FLAGS);
+
+      // Store demo text as the last analyzed text so the debounce guard
+      // doesn't re-analyze the pre-loaded content unnecessarily.
+      lastAnalyzedTextRef.current = editor.getText();
     }
   }, []);
 
@@ -47,18 +165,28 @@ export default function Home() {
       <section className="flex-1 hero-enter stagger-1">
         <Editor
           content={DEMO_CONTENT}
+          onUpdate={handleTextUpdate}
           onEditorReady={handleEditorReady}
         />
       </section>
 
-      {/* Footer */}
+      {/* Footer with loading indicator */}
       <footer className="py-8 hero-enter stagger-2">
-        <p
-          className="font-mono text-muted-light tracking-[0.04em]"
-          style={{ fontSize: "var(--type-3xs)" }}
-        >
-          Advocating for the reader.
-        </p>
+        <div className="flex items-center gap-3">
+          <p
+            className="font-mono text-muted-light tracking-[0.04em]"
+            style={{ fontSize: "var(--type-3xs)" }}
+          >
+            Advocating for the reader.
+          </p>
+          {isAnalyzing && (
+            <div className="flex items-center gap-1" aria-label="Analyzing text">
+              <span className="loading-dot" />
+              <span className="loading-dot" style={{ animationDelay: "0.2s" }} />
+              <span className="loading-dot" style={{ animationDelay: "0.4s" }} />
+            </div>
+          )}
+        </div>
       </footer>
     </main>
   );
