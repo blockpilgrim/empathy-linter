@@ -127,7 +127,7 @@ Phase 0: Bootstrap
 
 ### 2A. Schema & Prompts
 
-- [ ] **2.1** Create `lib/schemas.ts` — Zod schema for the LLM output:
+- [x] **2.1** Create `lib/schemas.ts` — Zod schema for the LLM output:
   ```typescript
   const EmpathyFlagSchema = z.object({
     exact_phrase: z.string().describe("The exact phrase from the text that assumes reader knowledge"),
@@ -138,14 +138,14 @@ Phase 0: Bootstrap
     flags: z.array(EmpathyFlagSchema).describe("Array of empathy flags found in the text"),
   });
   ```
-- [ ] **2.2** Create `lib/prompts.ts` — the system prompt for empathy analysis. This is the most important piece to get right. Key requirements:
+- [x] **2.2** Create `lib/prompts.ts` — the system prompt for empathy analysis. This is the most important piece to get right. Key requirements:
   - Instruct Claude to act as a "reader advocate" scanning for assumed knowledge
   - Define what constitutes a flag: unexplained acronyms, internal jargon, assumed prerequisite knowledge, missing context, undefined technical terms
   - Define what is NOT a flag: standard industry terms (API, HTTP, JSON, CSS, etc.), terms that are defined elsewhere in the same text
   - Instruct Claude to return `exact_phrase` as a **verbatim substring** of the input (critical for text matching in step 1.8)
   - Keep suggestions constructive, not prescriptive — "Consider adding a brief definition" not "Change this to..."
   - Reference: `pulp/lib/prompts.ts` for prompt structure patterns
-- [ ] **2.3** Create `lib/config.ts`:
+- [x] **2.3** Create `lib/config.ts`:
   ```typescript
   export const CLAUDE_MODEL = "claude-sonnet-4-6";
   export const DEBOUNCE_MS = 2000;
