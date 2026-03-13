@@ -72,6 +72,18 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Generate flag IDs at apply-time, not at creation-time** — the `EmpathyFlagInput` type omits `id`; `applyFlags()` generates a `crypto.randomUUID()` for each flag when creating the mark. This keeps the input shape clean for both demo flags and LLM output.
 - **Guard demo flag application with a ref** — use a `useRef(false)` boolean to prevent double-application in React strict mode, which remounts components and fires effects twice in development.
 
+## Schemas & Types
+
+- **Zod schemas live in `lib/schemas.ts`** — all structured data shapes (LLM output, API payloads) are defined once as Zod schemas with `.describe()` annotations for LLM structured output.
+- **Inferred types are the single source of truth** — use `z.infer<typeof Schema>` to derive TypeScript types from Zod schemas. Do not duplicate type definitions in consuming modules; import from `schemas.ts` instead.
+- **`EmpathyFlagInput` is the LLM output shape** — it has `exact_phrase`, `reason`, `suggestion` but no `id`. The `id` is generated at apply-time by `applyFlags()`. Both demo flags and LLM output conform to this type.
+
+## Prompts
+
+- **System prompt as `const LINT_SYSTEM`** — exported string constant in `lib/prompts.ts`. Contains role definition, flag/no-flag rules, exact_phrase requirements, and calibration guidance.
+- **User prompt as `const LINT_USER = (text: string) => ...`** — exported arrow function that takes the text to analyze and returns the user message. Kept simple; the system prompt carries the heavy instructions.
+- **Prompt naming convention** — `LINT_` prefix for empathy linting prompts. Follow `{FEATURE}_{ROLE}` pattern (e.g., `LINT_SYSTEM`, `LINT_USER`).
+
 ## Anti-Patterns
 
 - **Do NOT use `create-next-app`** in an existing repo — it conflicts with existing files and git history.
@@ -79,3 +91,4 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Do NOT commit .eot or .woff font files** — only .woff2 is used. Legacy formats add dead weight to git history.
 - **Do NOT use `editor.chain().unsetAllMarks()` for document-wide mark clearing** — it only affects the current selection. Use `doc.descendants()` with `tr.removeMark()` instead.
 - **Do NOT use `doc.textContent` for phrase matching** — it concatenates paragraphs with no separator, allowing false matches across paragraph boundaries. Use `doc.textBetween(0, doc.content.size, "\n")` instead.
+- **Do NOT duplicate Zod-inferred types** — if a type is derived from a Zod schema in `schemas.ts`, import it from there. Do not redefine the same interface in consuming modules.
