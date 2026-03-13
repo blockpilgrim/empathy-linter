@@ -180,19 +180,19 @@ Phase 0: Bootstrap
 > **Depends on:** Phase 1 AND Phase 2 (both must be complete).
 > **Estimated effort:** ~1.5 hrs.
 
-- [ ] **3.1** Implement debounced analysis trigger in `page.tsx`:
+- [x] **3.1** Implement debounced analysis trigger in `page.tsx`:
   - On every `onUpdate` from the editor, reset a 2000ms timer.
   - When the timer fires, call `/api/lint` with the editor's plain text content.
   - Reference: `pulp/app/write/[id]/page.tsx` debounce pattern (but change 500ms → 2000ms).
   - **Guard:** Don't fire if text hasn't changed since last analysis. Store `lastAnalyzedText` ref.
   - **Guard:** Don't fire if a request is already in-flight. Use AbortController to cancel stale requests.
-- [ ] **3.2** Wire up `streamObject` client-side consumption:
+- [x] **3.2** Wire up `streamObject` client-side consumption:
   - Use the `useObject` hook from `ai/react`, or manually consume the stream with `fetch` + stream reader.
   - As each flag arrives from the stream, immediately call `applyFlags()` to add highlights.
   - **Progressive reveal:** Highlights appear one by one as the LLM identifies them, rather than all at once.
-- [ ] **3.3** Handle the "resolution" flow: when the user edits text under a highlight, the mark should be removed. TipTap marks are inherently tied to text ranges, so editing the marked text will naturally split/remove the mark. Verify this works correctly.
-- [ ] **3.4** Add loading indicator — a subtle status bar or pulsing dot that shows when analysis is in-flight. Should be non-disruptive (bottom corner or inline with editor chrome). Avoid a spinner over the editor.
-- [ ] **3.5** Edge case: if the user is still typing when results arrive, the document text may have changed since the request was sent. `applyFlags()` should gracefully handle mismatches (phrases not found due to edits → skip them).
+- [x] **3.3** Handle the "resolution" flow: when the user edits text under a highlight, the mark should be removed. TipTap marks are inherently tied to text ranges, so editing the marked text will naturally split/remove the mark. Verify this works correctly.
+- [x] **3.4** Add loading indicator — a subtle status bar or pulsing dot that shows when analysis is in-flight. Should be non-disruptive (bottom corner or inline with editor chrome). Avoid a spinner over the editor.
+- [x] **3.5** Edge case: if the user is still typing when results arrive, the document text may have changed since the request was sent. `applyFlags()` should gracefully handle mismatches (phrases not found due to edits → skip them).
 
 ---
 

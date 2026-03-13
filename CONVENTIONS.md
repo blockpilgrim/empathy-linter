@@ -114,6 +114,16 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Sweep expired entries on each check** — iterate the Map and delete entries where `resetAt <= Date.now()`. Simple and prevents unbounded memory growth.
 - **Constants colocated in the module** — `MAX_REQUESTS` and `WINDOW_MS` live in `lib/rate-limit.ts` (not `lib/config.ts`) since they're rate-limit-specific, not app-wide configuration.
 
+## Ambient Scanning Pipeline
+
+- **Debounce with refs, not state** — use `useRef` for the debounce timer, `lastAnalyzedText`, and `AbortController`. These values don't need to trigger re-renders and using state would cause unnecessary re-render cycles during the debounce window.
+- **`DEBOUNCE_MS` from `lib/config.ts`** — the 2000ms debounce delay is an app-wide constant. Import it rather than hardcoding.
+- **AbortController for in-flight cancellation** — when a new analysis starts, abort any in-flight request first. Store the controller in a ref. In the `finally` block, only clear `isAnalyzing` if the controller is still the active one (a newer request may have already replaced it).
+- **`parsePartialJson` from `ai` for streaming consumption** — the `toTextStreamResponse()` format streams text chunks that form valid JSON when concatenated. Accumulate chunks and use `parsePartialJson` to reconstruct partial objects mid-stream. This enables progressive highlight reveal as flags arrive.
+- **Text-change guard prevents redundant analysis** — store the last analyzed text in a ref. Skip the API call if the current text matches. Also seed this ref with the demo content on mount to avoid re-analyzing pre-loaded content.
+- **Cleanup on unmount** — clear the debounce timer and abort any in-flight request in the `useEffect` cleanup function. Prevents memory leaks and stale requests.
+- **Loading indicator in the footer** — three `.loading-dot` spans with staggered `animationDelay` provide a subtle pulsing indicator. Non-disruptive positioning in the footer keeps the editor area clean.
+
 ## Anti-Patterns
 
 - **Do NOT use `create-next-app`** in an existing repo — it conflicts with existing files and git history.
@@ -124,3 +134,5 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Do NOT duplicate Zod-inferred types** — if a type is derived from a Zod schema in `schemas.ts`, import it from there. Do not redefine the same interface in consuming modules.
 - **Do NOT use `generateObject` for streaming use cases** — it waits for the full response before returning. Use `streamObject` to enable progressive UI updates as the LLM generates flags.
 - **Do NOT expose internal error details to clients** — log the full error to `console.error`, but return a generic "Internal server error" message in the 500 response.
+- **Do NOT use `useObject` from `ai/react` in AI SDK v6** — the hook does not exist in the `ai@^6.0.93` package. Consume `toTextStreamResponse()` streams manually with `fetch` + `ReadableStream` reader + `parsePartialJson` from `ai`.
+- **Do NOT use state for debounce internals** — storing the debounce timer, last-analyzed text, or AbortController in React state causes unnecessary re-renders. Use `useRef` for values that the render cycle does not need to observe.
