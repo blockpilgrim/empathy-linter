@@ -83,6 +83,15 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **System prompt as `const LINT_SYSTEM`** — exported string constant in `lib/prompts.ts`. Contains role definition, flag/no-flag rules, exact_phrase requirements, and calibration guidance.
 - **User prompt as `const LINT_USER = (text: string) => ...`** — exported arrow function that takes the text to analyze and returns the user message. Kept simple; the system prompt carries the heavy instructions.
 - **Prompt naming convention** — `LINT_` prefix for empathy linting prompts. Follow `{FEATURE}_{ROLE}` pattern (e.g., `LINT_SYSTEM`, `LINT_USER`).
+- **XML-style delimiters for user input** — wrap user-provided text in `<document>...</document>` tags rather than `---` delimiters. Markdown horizontal rules and YAML frontmatter in user input could conflict with `---` delimiters.
+
+## Testing
+
+- **Framework:** Vitest (`npm test` runs `vitest run`).
+- **Test file co-location** — test files live next to source files as `*.test.ts` (e.g., `lib/schemas.test.ts` alongside `lib/schemas.ts`).
+- **Import style** — `import { describe, it, expect } from "vitest"`.
+- **Scope** — `vitest.config.ts` includes `**/*.test.ts` with excludes for `node_modules` and `.next`.
+- **Path alias** — `@/` alias is mirrored in `vitest.config.ts` via `resolve.alias` to match `tsconfig.json`.
 
 ## Anti-Patterns
 

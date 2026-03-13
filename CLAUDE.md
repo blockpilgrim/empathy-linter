@@ -12,6 +12,7 @@ Empathy Linter is an AI-powered web tool that scans technical documentation for 
 - **Editor:** TipTap (ProseMirror-based) with a custom inline Mark extension for highlights
 - **AI:** Vercel AI SDK (`streamObject`) + Anthropic API (Claude Sonnet)
 - **Schema validation:** Zod (enforces structured LLM output)
+- **Testing:** Vitest
 - **Styling:** Tailwind CSS v4, CSS custom properties for design tokens
 - **Language:** TypeScript
 
@@ -21,6 +22,7 @@ Empathy Linter is an AI-powered web tool that scans technical documentation for 
 npm run dev          # Start dev server on localhost:3000
 npm run build        # Production build
 npm run start        # Serve production build
+npm test             # Run tests (vitest)
 ```
 
 ## Architecture
@@ -37,8 +39,8 @@ components/
 lib/
   apply-flags.ts          # applyFlags() utility: removes old marks, applies new flags as inline marks
   empathy-extension.ts    # Custom TipTap Mark extension (inline highlights, NOT block nodes)
-  prompts.ts              # System prompt for empathy analysis
-  schemas.ts              # Zod schema: { exact_phrase, reason, suggestion }
+  prompts.ts              # LINT_SYSTEM (system prompt) + LINT_USER (user prompt function) for empathy analysis
+  schemas.ts              # Zod schemas (EmpathyFlagSchema, LintResultSchema) + inferred types (EmpathyFlagInput, LintResult)
   config.ts               # Constants: model name, debounce timing, max text length
   demo-content.ts         # Pre-loaded jargon-dense demo text and pre-computed highlight flags
 ```

@@ -8,6 +8,7 @@ AI-powered tool that scans technical documentation for assumed knowledge, unexpl
 npm install
 cp .env.example .env.local  # Add your ANTHROPIC_API_KEY
 npm run dev                  # http://localhost:3000
+npm test                     # Run tests
 ```
 
 ## Tech Stack
