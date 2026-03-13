@@ -1,14 +1,5 @@
 import type { Editor as TipTapEditor } from "@tiptap/react";
-
-/**
- * Input shape for an empathy flag — matches the LLM output schema.
- * The `id` is generated internally by `applyFlags`, not provided by the caller.
- */
-export interface EmpathyFlagInput {
-  exact_phrase: string;
-  reason: string;
-  suggestion: string;
-}
+import type { EmpathyFlagInput } from "./schemas";
 
 /**
  * Block separator inserted between paragraphs when building the searchable

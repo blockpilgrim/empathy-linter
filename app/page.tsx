@@ -4,7 +4,8 @@ import { useState, useCallback, useRef } from "react";
 import type { Editor as TipTapEditor } from "@tiptap/react";
 import Editor from "@/components/editor";
 import { DEMO_CONTENT, DEMO_FLAGS } from "@/lib/demo-content";
-import { applyFlags, type EmpathyFlagInput } from "@/lib/apply-flags";
+import { applyFlags } from "@/lib/apply-flags";
+import type { EmpathyFlagInput } from "@/lib/schemas";
 
 export default function Home() {
   const [flags, setFlags] = useState<EmpathyFlagInput[]>([]);
