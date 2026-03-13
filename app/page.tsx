@@ -8,7 +8,6 @@ import { applyFlags, type EmpathyFlagInput } from "@/lib/apply-flags";
 
 export default function Home() {
   const [flags, setFlags] = useState<EmpathyFlagInput[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const editorRef = useRef<TipTapEditor | null>(null);
   const demoFlagsApplied = useRef(false);
 
