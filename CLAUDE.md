@@ -39,12 +39,12 @@ lib/
   prompts.ts              # System prompt for empathy analysis
   schemas.ts              # Zod schema: { exact_phrase, reason, suggestion }
   config.ts               # Constants: model name, debounce timing, max text length
-  demo-content.ts         # Pre-loaded jargon-dense demo paragraph
+  demo-content.ts         # Pre-loaded jargon-dense demo text and pre-computed highlight flags
 ```
 
 ## Key Architecture Decisions
 
-- **Marks, not Nodes:** The TipTap extension uses an inline Mark (renders `<span data-empathy-flag>`) — not a block-level Node. This wraps existing text without modifying document structure.
+- **Marks, not Nodes:** The TipTap extension uses an inline Mark (renders `<span data-empathy-flag>`) — not a block-level Node. This wraps existing text without modifying document structure. The mark uses `inclusive: false` (prevents highlight spreading when typing at boundaries) and `excludes: "empathyFlag"` (prevents overlapping marks).
 - **Stateless:** No database, no auth, no persistence. All state lives in the browser session.
 - **Streaming flags:** Uses `streamObject` (not `generateObject`) so highlights appear progressively as the LLM identifies them.
 - **Ambient analysis:** Debounced at 2000ms after typing stops. Requests are guarded by text-change detection and AbortController for in-flight cancellation.

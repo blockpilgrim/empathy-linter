@@ -24,3 +24,10 @@ Record of significant architectural decisions made during implementation.
 **Phase:** 0 (Bootstrap)
 **Decision:** No dark mode palette or toggle in the initial build.
 **Rationale:** Time constraint (1-day timebox). The light paper aesthetic is core to the demo experience. Dark mode can be added post-MVP by porting Pulp's `[data-theme="dark"]` approach.
+
+## AD-004: TipTap Mark (not Node) for empathy highlights
+
+**Date:** 2026-03-13
+**Phase:** 1B (Custom Empathy Highlight Extension)
+**Decision:** Use a TipTap `Mark` extension (inline `<span>`) instead of a `Node` extension (block-level element) for empathy highlights.
+**Rationale:** Pulp's `ProvocationExtension` is a block-level atom node that inserts standalone blocks between paragraphs. The empathy linter needs inline phrase-level highlights that wrap existing text without modifying document structure. Marks are the correct ProseMirror primitive for this — they decorate text ranges rather than creating new content. Key behavioral properties: `inclusive: false` prevents highlight spreading at boundaries, `excludes: "empathyFlag"` prevents overlapping marks.

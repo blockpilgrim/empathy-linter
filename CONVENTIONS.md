@@ -46,8 +46,11 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **`EditorContent` wrapped in `.tiptap-editor-wrapper`** — all editor CSS targets `.tiptap-editor-wrapper .tiptap` to scope styles and avoid collisions.
 - **Editor component exposes `content` (initial HTML), `onUpdate` (plain text callback), and `onEditorReady` (editor instance callback)** — keeps the component reusable. State management lives in the parent; the parent gets the editor instance via `onEditorReady` to programmatically apply marks.
 - **Custom marks use `Mark.create()` from `@tiptap/core`** — marks wrap inline text (unlike Nodes which are block-level). The `empathyFlag` mark stores `id`, `reason`, and `suggestion` as attributes rendered to `data-*` attributes on the DOM span.
+- **Highlight marks use `inclusive: false`** — prevents the mark from spreading when users type at the boundary of a highlighted span. This is correct for highlight/annotation marks (unlike formatting marks like bold where `inclusive: true` is desirable).
+- **Highlight marks use `excludes` for self-exclusion** — `excludes: "empathyFlag"` prevents overlapping marks of the same type from being applied to the same text range.
 - **Mark attributes use `parseHTML`/`renderHTML` pairs** — each attribute defines how to read from and write to the DOM element, using `data-*` attributes for structured data storage.
 - **Alias TipTap's `Editor` type as `TipTapEditor`** — the default export of editor.tsx is also named `Editor`, so the type import must be aliased to avoid conflicts.
+- **Ref-stabilized callbacks in useEffect** — when a callback prop is used inside a `useEffect`, store the latest value in a ref (`useRef`) and depend only on the stable dependency (e.g., `editor`). This prevents unnecessary effect re-runs when the parent re-renders without memoizing the callback.
 - **Design token font sizes via inline `style`** — prefer `style={{ fontSize: "var(--type-2xs)" }}` over Tailwind bracket syntax (`text-[length:var(--type-2xs)]`) for readability when referencing CSS custom properties not bridged to `@theme`.
 
 ## Demo Content

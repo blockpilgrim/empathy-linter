@@ -84,13 +84,13 @@ Phase 0: Bootstrap
 >
 > **Approach:** Use a TipTap **Mark** extension (not a Node). Marks wrap inline text ranges and render as styled `<span>` elements. This lets us highlight "exact_phrase" matches within the user's text while keeping the document editable.
 
-- [ ] **1.4** Create `lib/empathy-extension.ts` — a custom TipTap Mark extension:
+- [x] **1.4** Create `lib/empathy-extension.ts` — a custom TipTap Mark extension:
   - Name: `empathyFlag`
   - Attributes: `id`, `reason`, `suggestion` (stored on the mark, used by popover on click)
   - `parseHTML`: `<span data-empathy-flag>`
   - `renderHTML`: renders a `<span>` with `data-empathy-flag` attribute, `class="empathy-highlight"`, and the attributes as `data-*` attrs
   - **No ReactNodeViewRenderer needed** — marks are simpler than nodes and just need CSS styling + click event handling
-- [ ] **1.5** Style `.empathy-highlight` — use Pulp's highlighter gradient technique:
+- [x] **1.5** Style `.empathy-highlight` — use Pulp's highlighter gradient technique:
   ```css
   .empathy-highlight {
     background-image: linear-gradient(
@@ -104,7 +104,7 @@ Phase 0: Bootstrap
   }
   ```
   - Reference: `pulp/app/globals.css` `.provocation-text` styles.
-- [ ] **1.6** Create `lib/demo-content.ts` — a hardcoded jargon-dense paragraph for the initial editor state. Draft 2-3 paragraphs of fake internal engineering documentation that is technically accurate but full of unexplained acronyms, assumed context, and insider jargon.
+- [x] **1.6** Create `lib/demo-content.ts` — a hardcoded jargon-dense paragraph for the initial editor state. Draft 2-3 paragraphs of fake internal engineering documentation that is technically accurate but full of unexplained acronyms, assumed context, and insider jargon.
 
 ### 1C. Editor State Management
 
