@@ -45,7 +45,7 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **StarterKit with all block formatting disabled** — only paragraphs and hard breaks are kept. The editor is a plain-text writing surface, not a rich-text editor.
 - **`EditorContent` wrapped in `.tiptap-editor-wrapper`** — all editor CSS targets `.tiptap-editor-wrapper .tiptap` to scope styles and avoid collisions.
 - **Editor component exposes `content` (initial HTML) and `onUpdate` (plain text callback)** — keeps the component reusable. State management lives in the parent.
-- **Design token font sizes via inline `style`** — Tailwind v4 cannot reference CSS custom properties like `var(--type-2xs)` in utility classes. Use `style={{ fontSize: "var(--type-2xs)" }}` for these values.
+- **Design token font sizes via inline `style`** — prefer `style={{ fontSize: "var(--type-2xs)" }}` over Tailwind bracket syntax (`text-[length:var(--type-2xs)]`) for readability when referencing CSS custom properties not bridged to `@theme`.
 
 ## Anti-Patterns
 
