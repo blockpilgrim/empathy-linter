@@ -39,6 +39,14 @@ This document tracks established patterns, anti-patterns, and architectural conv
 
 - Tailwind v4 uses `@tailwindcss/postcss` plugin in `postcss.config.mjs` (object-key format: `"@tailwindcss/postcss": {}`). This replaces v3's `tailwindcss` plugin.
 
+## TipTap Editor
+
+- **`immediatelyRender: false`** — required for SSR compatibility with Next.js App Router. Without this, TipTap attempts to render before hydration and causes mismatches.
+- **StarterKit with all block formatting disabled** — only paragraphs and hard breaks are kept. The editor is a plain-text writing surface, not a rich-text editor.
+- **`EditorContent` wrapped in `.tiptap-editor-wrapper`** — all editor CSS targets `.tiptap-editor-wrapper .tiptap` to scope styles and avoid collisions.
+- **Editor component exposes `content` (initial HTML) and `onUpdate` (plain text callback)** — keeps the component reusable. State management lives in the parent.
+- **Design token font sizes via inline `style`** — Tailwind v4 cannot reference CSS custom properties like `var(--type-2xs)` in utility classes. Use `style={{ fontSize: "var(--type-2xs)" }}` for these values.
+
 ## Anti-Patterns
 
 - **Do NOT use `create-next-app`** in an existing repo — it conflicts with existing files and git history.
