@@ -77,6 +77,7 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Zod schemas live in `lib/schemas.ts`** — all structured data shapes (LLM output, API payloads) are defined once as Zod schemas with `.describe()` annotations for LLM structured output.
 - **Inferred types are the single source of truth** — use `z.infer<typeof Schema>` to derive TypeScript types from Zod schemas. Do not duplicate type definitions in consuming modules; import from `schemas.ts` instead.
 - **`EmpathyFlagInput` is the LLM output shape** — it has `exact_phrase`, `reason`, `suggestion` but no `id`. The `id` is generated at apply-time by `applyFlags()`. Both demo flags and LLM output conform to this type.
+- **Use `.refine()` for semantic string validation** — `.min(1)` only checks length; whitespace-only strings pass. Use `.refine(s => s.trim().length > 0)` for fields like `exact_phrase` where meaningful content is required.
 
 ## Prompts
 
@@ -92,6 +93,8 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Import style** — `import { describe, it, expect } from "vitest"`.
 - **Scope** — `vitest.config.ts` includes `**/*.test.ts` with excludes for `node_modules` and `.next`.
 - **Path alias** — `@/` alias is mirrored in `vitest.config.ts` via `resolve.alias` to match `tsconfig.json`.
+- **Golden evaluation dataset** — `lib/eval/golden-dataset.ts` contains jargon-heavy samples with `expectedFlags` (verbatim phrases + `why`) and `shouldNotFlag` lists. Used by prompt tests to validate prompt structure and schema conformance without calling the LLM.
+- **`vi.resetModules()` for stateful module isolation** — when testing modules with module-level state (e.g., the rate limiter's `Map`), use `vi.resetModules()` in `beforeEach` and dynamic `await import()` in each test to get a fresh module instance.
 
 ## API Routes
 
@@ -101,6 +104,8 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **`createAnthropic` with server-side key** — instantiate the provider in the route handler using `process.env.ANTHROPIC_API_KEY`. Check the key exists and return 500 if missing (don't expose the reason to the client beyond "Server configuration error").
 - **`temperature: 0` for analysis tasks** — deterministic output is preferred for linting/analysis. Reserve higher temperatures for creative generation.
 - **IP extraction from `x-forwarded-for`** — use `req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()` to get the client IP behind proxies (Vercel). Fall back to `"unknown"`.
+- **Wrap `req.json()` in its own try/catch** — malformed JSON bodies throw `SyntaxError`. Catch it explicitly and return 400 with `"Invalid JSON in request body"` rather than letting it fall through to the generic 500 handler.
+- **Include `Retry-After` header on 429 responses** — return the number of seconds until the rate-limit window resets. Well-behaved clients use this for backoff.
 
 ## Rate Limiting
 
