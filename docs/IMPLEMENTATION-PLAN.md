@@ -70,13 +70,13 @@ Phase 0: Bootstrap
 
 ### 1A. Basic Editor Component
 
-- [ ] **1.1** Create `components/editor.tsx` — a client component wrapping `useEditor` from TipTap.
+- [x] **1.1** Create `components/editor.tsx` — a client component wrapping `useEditor` from TipTap.
   - Reference: `pulp/components/canvas.tsx` for the `useEditor` setup pattern.
   - Configure StarterKit (disable most block-level formatting — keep paragraphs and hard breaks only, similar to Pulp's stripped config).
   - Add Placeholder extension: `"Paste your documentation here, or start writing..."`.
   - Expose `onUpdate` callback that emits plain text content.
-- [ ] **1.2** Mount `<Editor />` in `app/page.tsx` inside a centered layout container. Basic page structure: header (title + tagline), editor area, footer.
-- [ ] **1.3** Style the editor area — generous padding, max-width container, readable line height. Reference Pulp's `.canvas` and `.tiptap` CSS.
+- [x] **1.2** Mount `<Editor />` in `app/page.tsx` inside a centered layout container. Basic page structure: header (title + tagline), editor area, footer.
+- [x] **1.3** Style the editor area — generous padding, max-width container, readable line height. Reference Pulp's `.canvas` and `.tiptap` CSS.
 
 ### 1B. Custom Empathy Highlight Extension
 
@@ -100,7 +100,7 @@ Phase 0: Bootstrap
     );
     cursor: pointer;
     border-radius: 0.15em 0.4em 0.3em 0.2em;
-    transition: background-color 0.2s ease;
+    transition: opacity 0.2s ease;
   }
   ```
   - Reference: `pulp/app/globals.css` `.provocation-text` styles.
