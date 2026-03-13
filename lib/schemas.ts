@@ -9,6 +9,7 @@ import { z } from "zod";
 export const EmpathyFlagSchema = z.object({
   exact_phrase: z
     .string()
+    .min(1)
     .describe(
       "The exact phrase from the text that assumes reader knowledge — must be a verbatim substring"
     ),
@@ -35,9 +36,6 @@ export const LintResultSchema = z.object({
  * The `id` is generated at apply-time by `applyFlags()`.
  */
 export type EmpathyFlagInput = z.infer<typeof EmpathyFlagSchema>;
-
-/** A single empathy flag — alias matching the schema name. */
-export type EmpathyFlag = z.infer<typeof EmpathyFlagSchema>;
 
 /** The full lint result containing an array of flags. */
 export type LintResult = z.infer<typeof LintResultSchema>;

@@ -52,6 +52,6 @@ CALIBRATION:
 export const LINT_USER = (text: string) =>
   `Analyze the following text for assumed knowledge and jargon. Return empathy flags for any phrases that might confuse or alienate readers who lack specialized context.
 
----
+<document>
 ${text}
----`;
+</document>`;
