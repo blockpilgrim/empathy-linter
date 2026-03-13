@@ -1,8 +1,29 @@
 "use client";
 
+import { useState, useCallback, useRef } from "react";
+import type { Editor as TipTapEditor } from "@tiptap/react";
 import Editor from "@/components/editor";
+import { DEMO_CONTENT, DEMO_FLAGS } from "@/lib/demo-content";
+import { applyFlags, type EmpathyFlagInput } from "@/lib/apply-flags";
 
 export default function Home() {
+  const [flags, setFlags] = useState<EmpathyFlagInput[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const editorRef = useRef<TipTapEditor | null>(null);
+  const demoFlagsApplied = useRef(false);
+
+  const handleEditorReady = useCallback((editor: TipTapEditor) => {
+    editorRef.current = editor;
+
+    // Apply pre-computed demo flags on initial mount for instant highlights.
+    // Guard against double-application (React strict mode calls effects twice).
+    if (!demoFlagsApplied.current) {
+      demoFlagsApplied.current = true;
+      applyFlags(editor, DEMO_FLAGS);
+      setFlags(DEMO_FLAGS);
+    }
+  }, []);
+
   return (
     <main className="min-h-screen flex flex-col w-full max-w-2xl mx-auto px-6">
       {/* Header */}
@@ -24,7 +45,10 @@ export default function Home() {
 
       {/* Editor */}
       <section className="flex-1 hero-enter stagger-1">
-        <Editor />
+        <Editor
+          content={DEMO_CONTENT}
+          onEditorReady={handleEditorReady}
+        />
       </section>
 
       {/* Footer */}
