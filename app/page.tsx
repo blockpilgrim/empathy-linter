@@ -63,6 +63,8 @@ export default function Home() {
 
       const decoder = new TextDecoder();
       let accumulated = "";
+      let previousFlagCount = 0;
+      let latestFlags: EmpathyFlagInput[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -85,13 +87,24 @@ export default function Home() {
         ) {
           const partialFlags = (parsed as { flags: EmpathyFlagInput[] }).flags;
 
-          // Only apply if we have valid flags and the editor is still available
+          // Only re-apply marks when a new flag arrives (not on every chunk).
+          // Filter to complete flags to avoid marks with undefined metadata.
+          const completeFlags = partialFlags.filter(
+            (f) => f.exact_phrase && f.reason && f.suggestion
+          );
+
           const editor = editorRef.current;
-          if (editor && partialFlags.length > 0) {
-            applyFlags(editor, partialFlags);
-            setFlags(partialFlags);
+          if (editor && completeFlags.length > previousFlagCount) {
+            previousFlagCount = completeFlags.length;
+            latestFlags = completeFlags;
+            applyFlags(editor, completeFlags);
           }
         }
+      }
+
+      // Update React state once after streaming completes (not per-chunk)
+      if (latestFlags.length > 0) {
+        setFlags(latestFlags);
       }
     } catch (err: unknown) {
       // AbortError is expected when we cancel a stale request — ignore it
@@ -180,7 +193,7 @@ export default function Home() {
             Advocating for the reader.
           </p>
           {isAnalyzing && (
-            <div className="flex items-center gap-1" aria-label="Analyzing text">
+            <div className="flex items-center gap-1" role="status" aria-label="Analyzing text">
               <span className="loading-dot" />
               <span className="loading-dot" style={{ animationDelay: "0.2s" }} />
               <span className="loading-dot" style={{ animationDelay: "0.4s" }} />
