@@ -108,8 +108,8 @@ Phase 0: Bootstrap
 
 ### 1C. Editor State Management
 
-- [ ] **1.7** Wire up `page.tsx` state: `flags` (array of empathy flag objects), `isAnalyzing` (boolean loading state), editor ref.
-- [ ] **1.8** Implement `applyFlags(editor, flags)` utility — given the editor instance and an array of `{ exact_phrase, reason, suggestion }` objects:
+- [x] **1.7** Wire up `page.tsx` state: `flags` (array of empathy flag objects), `isAnalyzing` (boolean loading state), editor ref.
+- [x] **1.8** Implement `applyFlags(editor, flags)` utility — given the editor instance and an array of `{ exact_phrase, reason, suggestion }` objects:
   1. Remove all existing `empathyFlag` marks from the document.
   2. For each flag, search the document's text content for `exact_phrase`.
   3. If found, apply the `empathyFlag` mark at the matched position range with `id`, `reason`, `suggestion` as mark attributes.

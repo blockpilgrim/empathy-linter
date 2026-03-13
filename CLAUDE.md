@@ -35,6 +35,7 @@ components/
   editor.tsx              # TipTap editor wrapper (client component)
   empathy-popover.tsx     # Popover for flag reason + suggestion (anchored to highlight spans)
 lib/
+  apply-flags.ts          # applyFlags() utility: removes old marks, applies new flags as inline marks
   empathy-extension.ts    # Custom TipTap Mark extension (inline highlights, NOT block nodes)
   prompts.ts              # System prompt for empathy analysis
   schemas.ts              # Zod schema: { exact_phrase, reason, suggestion }
