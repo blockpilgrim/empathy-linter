@@ -78,3 +78,4 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Do NOT add `src/` directory** — flat structure matches the reference project and keeps imports shorter.
 - **Do NOT commit .eot or .woff font files** — only .woff2 is used. Legacy formats add dead weight to git history.
 - **Do NOT use `editor.chain().unsetAllMarks()` for document-wide mark clearing** — it only affects the current selection. Use `doc.descendants()` with `tr.removeMark()` instead.
+- **Do NOT use `doc.textContent` for phrase matching** — it concatenates paragraphs with no separator, allowing false matches across paragraph boundaries. Use `doc.textBetween(0, doc.content.size, "\n")` instead.

@@ -31,3 +31,10 @@ Record of significant architectural decisions made during implementation.
 **Phase:** 1B (Custom Empathy Highlight Extension)
 **Decision:** Use a TipTap `Mark` extension (inline `<span>`) instead of a `Node` extension (block-level element) for empathy highlights.
 **Rationale:** Pulp's `ProvocationExtension` is a block-level atom node that inserts standalone blocks between paragraphs. The empathy linter needs inline phrase-level highlights that wrap existing text without modifying document structure. Marks are the correct ProseMirror primitive for this — they decorate text ranges rather than creating new content. Key behavioral properties: `inclusive: false` prevents highlight spreading at boundaries, `excludes: "empathyFlag"` prevents overlapping marks.
+
+## AD-005: Block separator in phrase matching to prevent cross-paragraph false matches
+
+**Date:** 2026-03-13
+**Phase:** 1C (Editor State Management)
+**Decision:** Use `doc.textBetween(0, doc.content.size, "\n")` with a newline block separator instead of `doc.textContent` when building the searchable text for phrase matching in `applyFlags()`.
+**Rationale:** ProseMirror's `doc.textContent` concatenates paragraph text with no separator between blocks. This means a phrase search could falsely match text that straddles a paragraph boundary (e.g., last word of paragraph 1 + first word of paragraph 2). Since LLM-returned phrases never contain newlines, inserting `"\n"` between blocks prevents these cross-boundary false matches while keeping position mapping correct.
