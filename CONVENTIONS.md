@@ -44,8 +44,17 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **`immediatelyRender: false`** — required for SSR compatibility with Next.js App Router. Without this, TipTap attempts to render before hydration and causes mismatches.
 - **StarterKit with all block formatting disabled** — only paragraphs and hard breaks are kept. The editor is a plain-text writing surface, not a rich-text editor.
 - **`EditorContent` wrapped in `.tiptap-editor-wrapper`** — all editor CSS targets `.tiptap-editor-wrapper .tiptap` to scope styles and avoid collisions.
-- **Editor component exposes `content` (initial HTML) and `onUpdate` (plain text callback)** — keeps the component reusable. State management lives in the parent.
+- **Editor component exposes `content` (initial HTML), `onUpdate` (plain text callback), and `onEditorReady` (editor instance callback)** — keeps the component reusable. State management lives in the parent; the parent gets the editor instance via `onEditorReady` to programmatically apply marks.
+- **Custom marks use `Mark.create()` from `@tiptap/core`** — marks wrap inline text (unlike Nodes which are block-level). The `empathyFlag` mark stores `id`, `reason`, and `suggestion` as attributes rendered to `data-*` attributes on the DOM span.
+- **Mark attributes use `parseHTML`/`renderHTML` pairs** — each attribute defines how to read from and write to the DOM element, using `data-*` attributes for structured data storage.
+- **Alias TipTap's `Editor` type as `TipTapEditor`** — the default export of editor.tsx is also named `Editor`, so the type import must be aliased to avoid conflicts.
 - **Design token font sizes via inline `style`** — prefer `style={{ fontSize: "var(--type-2xs)" }}` over Tailwind bracket syntax (`text-[length:var(--type-2xs)]`) for readability when referencing CSS custom properties not bridged to `@theme`.
+
+## Demo Content
+
+- **Demo content is HTML with `<p>` tags** — TipTap expects HTML string for initial content. Use `<p>` tags to separate paragraphs.
+- **Demo flags use `exact_phrase` matching** — each flag's `exact_phrase` must be a verbatim substring of the demo content's text (without HTML tags). The `applyFlags()` function will search the document for these phrases.
+- **Demo flags are pre-computed, not AI-generated** — the hardcoded `DEMO_FLAGS` array provides instant highlights on page load before the AI runs, giving zero time-to-value.
 
 ## Page Layout
 
