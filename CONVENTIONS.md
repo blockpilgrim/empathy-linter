@@ -133,11 +133,13 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Fixed positioning with `getBoundingClientRect()`** — anchor the popover using `position: fixed` and the clicked element's `getBoundingClientRect()`. This works regardless of scroll position or DOM nesting.
 - **Measure-then-position pattern** — render the popover invisibly (`visibility: hidden`) on first render to measure its dimensions via the DOM ref, then compute the final position and make it visible. This avoids a flash of mispositioned content.
 - **Viewport edge handling** — default to below the anchor; flip above if the popover would overflow the viewport bottom. Clamp horizontal position to keep the popover within viewport edges with padding.
-- **Recompute on resize/scroll** — add `resize` and `scroll` (with `capture: true` for scroll) event listeners to reposition the popover when the viewport changes.
+- **Recompute on resize, dismiss on scroll** — add a `resize` listener to reposition the popover. Dismiss the popover on `scroll` (with `capture: true`) because the anchor `DOMRect` is a snapshot captured at click time and becomes stale after scrolling.
 - **Click-outside uses `mousedown` (not `click`)** — from the Pulp pattern. `mousedown` fires before `click`, ensuring the popover dismisses before other click handlers run.
 - **Event delegation for mark clicks** — attach a single `click` listener to the editor wrapper section, not to individual highlight spans. Use `.closest(".empathy-highlight")` to find the clicked span. This works correctly as highlights are created/destroyed dynamically by TipTap.
 - **Read flag metadata from DOM `data-*` attributes** — the click handler reads `data-reason` and `data-suggestion` from the clicked span element, not from React state. This keeps the click handler independent of the React render cycle.
 - **Auto-dismiss on typing** — clear popover state in `handleTextUpdate` so the popover does not block writing flow.
+- **Dismiss popover before mark replacement** — when `applyFlags()` is called during streaming analysis, dismiss the popover first (`setPopover(null)`). The old highlight spans are destroyed and replaced; a lingering popover would be anchored to a non-existent element.
+- **Ref-stabilized `onClose` in popover** — store `onClose` in a ref inside the popover component to decouple the event listener lifecycle from prop identity. Without this, inline `() => setPopover(null)` causes listener re-registration on every parent render.
 - **Popover rendered outside the editor wrapper** — render `<EmpathyPopover>` as a sibling to the editor section, not inside `.tiptap-editor-wrapper`, to avoid editor CSS scoping issues.
 
 ## Anti-Patterns

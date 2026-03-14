@@ -80,3 +80,17 @@ Record of significant architectural decisions made during implementation.
 **Phase:** 3 (Ambient Scanning Pipeline)
 **Decision:** In the `finally` block of `analyzeText`, compare the controller to the current ref value (`abortControllerRef.current === controller`) before clearing `isAnalyzing` state.
 **Rationale:** When a new analysis request starts while a previous one is in-flight, the new request aborts the old controller and replaces the ref. Without the identity check, the old request's `finally` block would set `isAnalyzing(false)` even though the new request is still active — causing the loading indicator to flicker off and back on. The identity check ensures only the most recent request controls the loading state.
+
+## AD-012: Event delegation for highlight clicks instead of per-element listeners
+
+**Date:** 2026-03-14
+**Phase:** 4 (Empathy Popovers)
+**Decision:** Attach a single `click` listener to the editor wrapper section using `.closest(".empathy-highlight")` to identify clicked spans, rather than attaching listeners to individual highlight spans.
+**Rationale:** TipTap dynamically creates and destroys `<span>` elements when marks are applied, removed, or the document is re-analyzed. Per-element listeners would need to be re-attached every time marks change. A single delegated listener on a stable parent element is simpler, more efficient, and requires no coordination with the mark lifecycle.
+
+## AD-013: Dismiss popover on scroll instead of repositioning
+
+**Date:** 2026-03-14
+**Phase:** 4 (Empathy Popovers)
+**Decision:** Dismiss the popover when the user scrolls, rather than attempting to reposition it.
+**Rationale:** The popover's `anchor` prop is a `DOMRect` snapshot captured at click time. After scrolling, this snapshot is stale — the highlight span has moved but the DOMRect still reflects the pre-scroll position. Repositioning would require either passing the `HTMLElement` reference (adding complexity) or re-querying the DOM. Dismissing on scroll is simpler and appropriate for an ephemeral popover that the user can re-open with a click.

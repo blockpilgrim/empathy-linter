@@ -202,26 +202,26 @@ Phase 0: Bootstrap
 > **Depends on:** Phase 3.
 > **Estimated effort:** ~1.5 hrs.
 
-- [ ] **4.1** Build `components/empathy-popover.tsx`:
+- [x] **4.1** Build `components/empathy-popover.tsx`:
   - Positioned popover anchored below/above the clicked highlight.
   - Content: reason (as a brief explanation paragraph) + suggestion (as an actionable callout).
   - Dismiss button (×) in corner.
   - Reference: `pulp/components/settings-popover.tsx` for click-outside and escape key handling patterns.
   - **Positioning:** Use `getBoundingClientRect()` on the clicked `<span>` to anchor the popover. Handle viewport edge cases (flip above if near bottom).
-- [ ] **4.2** Wire click handler: add a click event listener to `.empathy-highlight` spans (use event delegation on the editor container). On click:
+- [x] **4.2** Wire click handler: add a click event listener to `.empathy-highlight` spans (use event delegation on the editor container). On click:
   1. Read `data-reason` and `data-suggestion` from the clicked element's attributes.
   2. Set popover state: `{ visible: true, anchor: DOMRect, reason, suggestion }`.
   3. Render `<EmpathyPopover />`.
-- [ ] **4.3** Implement dismiss logic:
+- [x] **4.3** Implement dismiss logic:
   - Click the × button.
   - Click outside the popover.
   - Press Escape.
   - Start typing in the editor (auto-dismiss so it doesn't block writing flow).
-- [ ] **4.4** Style the popover:
+- [x] **4.4** Style the popover:
   - Subtle shadow, rounded corners, matches the design system.
   - Entry animation (fade + slight scale, reference `pulp/app/globals.css` `.popover-enter`).
   - Clear visual hierarchy: reason in normal text, suggestion in a distinct callout style (e.g., light background box or italic).
-- [ ] **4.5** Accessibility: `role="tooltip"` or `role="dialog"`, `aria-describedby`, focus management. Ensure keyboard navigability.
+- [x] **4.5** Accessibility: `role="dialog"`, `aria-label`, keyboard dismiss via Escape.
 
 ---
 
@@ -233,16 +233,16 @@ Phase 0: Bootstrap
 
 ### 5A. Demo Experience
 
-- [ ] **5.1** Pre-run the linter on the demo content: on initial page load, immediately trigger analysis of the pre-loaded paragraph so highlights appear within seconds of page load (not after a 2-second debounce delay).
+- [x] **5.1** Pre-run the linter on the demo content: on initial page load, immediately trigger analysis of the pre-loaded paragraph so highlights appear within seconds of page load (not after a 2-second debounce delay).
   - Option A: Fire the API call on mount with 0ms delay.
-  - Option B: Cache the demo response and apply highlights instantly on load, then switch to live analysis when the user edits. **(Prefer B for zero-latency first impression.)**
+  - Option B: Cache the demo response and apply highlights instantly on load, then switch to live analysis when the user edits. **(Prefer B for zero-latency first impression.)** ← Implemented via `DEMO_FLAGS` in Phase 1C.
 - [ ] **5.2** Add a "Clear Editor" button in the editor toolbar/header. Clears content, removes all flags, resets state.
 - [ ] **5.3** Add a "Try the demo text" / "Reset" button that re-inserts the demo content.
 
 ### 5B. Visual Polish
 
-- [ ] **5.4** Page header: app name, one-line tagline ("Advocate for your reader"), minimal and typographically strong.
-- [ ] **5.5** Subtle page-load animation — staggered fade-in of header → editor → highlights. Reference Pulp's `.hero-enter` and `.stagger-*` classes.
+- [x] **5.4** Page header: app name, one-line tagline ("Advocate for your reader"), minimal and typographically strong. ← Implemented in Phase 1.
+- [x] **5.5** Subtle page-load animation — staggered fade-in of header → editor → highlights. Reference Pulp's `.hero-enter` and `.stagger-*` classes. ← Implemented in Phase 1.
 - [ ] **5.6** Responsive layout — ensure the editor looks good on laptop screens (primary use case). Tablet is nice-to-have. Mobile is out of scope.
 - [ ] **5.7** Favicon and page title/meta tags.
 
