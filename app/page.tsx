@@ -129,6 +129,7 @@ export default function Home() {
           if (editor && completeFlags.length > previousFlagCount) {
             previousFlagCount = completeFlags.length;
             latestFlags = completeFlags;
+            setPopover(null);
             applyFlags(editor, completeFlags);
           }
         }

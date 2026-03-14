@@ -16,6 +16,9 @@ export default function EmpathyPopover({
   onClose,
 }: EmpathyPopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   const [position, setPosition] = useState<{
     top: number;
     left: number;
@@ -55,25 +58,28 @@ export default function EmpathyPopover({
     computePosition();
   }, [computePosition]);
 
-  // Recompute on window resize/scroll
+  // Recompute on resize; dismiss on scroll (anchor DOMRect is a snapshot
+  // that becomes stale when the document scrolls)
   useEffect(() => {
+    const dismissOnScroll = () => onCloseRef.current();
     window.addEventListener("resize", computePosition);
-    window.addEventListener("scroll", computePosition, true);
+    window.addEventListener("scroll", dismissOnScroll, true);
     return () => {
       window.removeEventListener("resize", computePosition);
-      window.removeEventListener("scroll", computePosition, true);
+      window.removeEventListener("scroll", dismissOnScroll, true);
     };
   }, [computePosition]);
 
-  // Click-outside and Escape dismiss (Pulp pattern)
+  // Click-outside and Escape dismiss (Pulp pattern).
+  // Uses ref for onClose to avoid re-registering listeners on every render.
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
-        onClose();
+        onCloseRef.current();
       }
     };
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEscape);
@@ -81,7 +87,7 @@ export default function EmpathyPopover({
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [onClose]);
+  }, []);
 
   return (
     <div
