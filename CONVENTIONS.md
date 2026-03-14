@@ -64,6 +64,12 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Single `<main>` wrapper** holds `max-w-2xl mx-auto px-6` — children (header, section, footer) inherit the constraint. Don't repeat layout classes on each section.
 - **Entrance animations** use `hero-enter stagger-N` classes (N = 0–3) defined in `globals.css`. Apply to top-level page sections for staggered fade-in on load.
 
+## Programmatic Editor Control
+
+- **Clear/Reset sequence: abort → clearTimeout → update guard ref → modify editor → reset state** — when programmatically changing editor content (clear or reset), abort any in-flight analysis and clear the debounce timer first, then update `lastAnalyzedTextRef` before calling `clearContent()`/`setContent()`, because these methods trigger `onUpdate` synchronously which restarts the debounce timer.
+- **Use `editor.commands.*` from the parent via `editorRef`** — call `clearContent()` and `setContent(html)` on the editor instance obtained via `onEditorReady`. Do not modify the editor component to expose these operations; keep all state management in `page.tsx`.
+- **Always use `type="button"` on non-submit buttons** — HTML defaults `<button>` to `type="submit"`, which would cause unexpected form submission if a `<form>` ancestor is ever added.
+
 ## Applying Marks Programmatically
 
 - **Use `doc.descendants()` + transaction for document-wide mark removal** — `editor.chain().unsetAllMarks()` only operates on the current selection, not the entire document. To remove all empathyFlag marks, walk `doc.descendants()` and call `tr.removeMark()` for each marked text node.

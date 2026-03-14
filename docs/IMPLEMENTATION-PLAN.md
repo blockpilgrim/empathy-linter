@@ -236,19 +236,19 @@ Phase 0: Bootstrap
 - [x] **5.1** Pre-run the linter on the demo content: on initial page load, immediately trigger analysis of the pre-loaded paragraph so highlights appear within seconds of page load (not after a 2-second debounce delay).
   - Option A: Fire the API call on mount with 0ms delay.
   - Option B: Cache the demo response and apply highlights instantly on load, then switch to live analysis when the user edits. **(Prefer B for zero-latency first impression.)** ← Implemented via `DEMO_FLAGS` in Phase 1C.
-- [ ] **5.2** Add a "Clear Editor" button in the editor toolbar/header. Clears content, removes all flags, resets state.
-- [ ] **5.3** Add a "Try the demo text" / "Reset" button that re-inserts the demo content.
+- [x] **5.2** Add a "Clear Editor" button in the editor toolbar/header. Clears content, removes all flags, resets state.
+- [x] **5.3** Add a "Try the demo text" / "Reset" button that re-inserts the demo content.
 
 ### 5B. Visual Polish
 
 - [x] **5.4** Page header: app name, one-line tagline ("Advocate for your reader"), minimal and typographically strong. ← Implemented in Phase 1.
 - [x] **5.5** Subtle page-load animation — staggered fade-in of header → editor → highlights. Reference Pulp's `.hero-enter` and `.stagger-*` classes. ← Implemented in Phase 1.
-- [ ] **5.6** Responsive layout — ensure the editor looks good on laptop screens (primary use case). Tablet is nice-to-have. Mobile is out of scope.
-- [ ] **5.7** Favicon and page title/meta tags.
+- [x] **5.6** Responsive layout — ensure the editor looks good on laptop screens (primary use case). Tablet is nice-to-have. Mobile is out of scope.
+- [x] **5.7** Favicon and page title/meta tags.
 
 ### 5C. Deploy
 
-- [ ] **5.8** Add `.env.local` to `.gitignore`. Create `.env.example` documenting required vars.
+- [x] **5.8** Add `.env.local` to `.gitignore`. Create `.env.example` documenting required vars.
 - [ ] **5.9** Deploy to Vercel. Verify the live URL works end-to-end.
 - [ ] **5.10** Smoke test the full demo flow:
   1. Page loads → demo text visible → highlights appear.
