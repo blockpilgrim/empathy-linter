@@ -127,6 +127,19 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Only re-apply marks when a new flag arrives** — track `previousFlagCount` and only call `applyFlags()` when `completeFlags.length > previousFlagCount`. This reduces calls from ~30 (every chunk) to ~8 (once per new flag).
 - **Update React state once after streaming completes** — call `setFlags()` after the `while` loop, not on every chunk. Reduces unnecessary re-renders from ~30 to 1 per analysis cycle.
 
+## Popovers
+
+- **Popover component is presentational** — receives `reason`, `suggestion`, `anchor` (DOMRect), and `onClose` as props. State management (which popover is open) lives in `page.tsx`, not in the component.
+- **Fixed positioning with `getBoundingClientRect()`** — anchor the popover using `position: fixed` and the clicked element's `getBoundingClientRect()`. This works regardless of scroll position or DOM nesting.
+- **Measure-then-position pattern** — render the popover invisibly (`visibility: hidden`) on first render to measure its dimensions via the DOM ref, then compute the final position and make it visible. This avoids a flash of mispositioned content.
+- **Viewport edge handling** — default to below the anchor; flip above if the popover would overflow the viewport bottom. Clamp horizontal position to keep the popover within viewport edges with padding.
+- **Recompute on resize/scroll** — add `resize` and `scroll` (with `capture: true` for scroll) event listeners to reposition the popover when the viewport changes.
+- **Click-outside uses `mousedown` (not `click`)** — from the Pulp pattern. `mousedown` fires before `click`, ensuring the popover dismisses before other click handlers run.
+- **Event delegation for mark clicks** — attach a single `click` listener to the editor wrapper section, not to individual highlight spans. Use `.closest(".empathy-highlight")` to find the clicked span. This works correctly as highlights are created/destroyed dynamically by TipTap.
+- **Read flag metadata from DOM `data-*` attributes** — the click handler reads `data-reason` and `data-suggestion` from the clicked span element, not from React state. This keeps the click handler independent of the React render cycle.
+- **Auto-dismiss on typing** — clear popover state in `handleTextUpdate` so the popover does not block writing flow.
+- **Popover rendered outside the editor wrapper** — render `<EmpathyPopover>` as a sibling to the editor section, not inside `.tiptap-editor-wrapper`, to avoid editor CSS scoping issues.
+
 ## Anti-Patterns
 
 - **Do NOT use `create-next-app`** in an existing repo — it conflicts with existing files and git history.
@@ -139,3 +152,5 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Do NOT expose internal error details to clients** — log the full error to `console.error`, but return a generic "Internal server error" message in the 500 response.
 - **Do NOT use `useObject` from `ai/react` in AI SDK v6** — the hook does not exist in the `ai@^6.0.93` package. Consume `toTextStreamResponse()` streams manually with `fetch` + `ReadableStream` reader + `parsePartialJson` from `ai`.
 - **Do NOT use state for debounce internals** — storing the debounce timer, last-analyzed text, or AbortController in React state causes unnecessary re-renders. Use `useRef` for values that the render cycle does not need to observe.
+- **Do NOT render popovers inside `.tiptap-editor-wrapper`** — editor CSS scoping (`.tiptap-editor-wrapper .tiptap`) can interfere with popover styles. Render popovers as siblings to the editor section.
+- **Do NOT attach click listeners to individual highlight spans** — TipTap dynamically creates/destroys spans when marks change. Use event delegation on a stable parent element instead.
