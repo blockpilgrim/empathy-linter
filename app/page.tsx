@@ -4,15 +4,24 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { parsePartialJson } from "ai";
 import type { Editor as TipTapEditor } from "@tiptap/react";
 import Editor from "@/components/editor";
+import EmpathyPopover from "@/components/empathy-popover";
 import { DEMO_CONTENT, DEMO_FLAGS } from "@/lib/demo-content";
 import { applyFlags } from "@/lib/apply-flags";
 import { DEBOUNCE_MS } from "@/lib/config";
 import type { EmpathyFlagInput } from "@/lib/schemas";
 
+interface PopoverState {
+  anchor: DOMRect;
+  reason: string;
+  suggestion: string;
+}
+
 export default function Home() {
   const [flags, setFlags] = useState<EmpathyFlagInput[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [popover, setPopover] = useState<PopoverState | null>(null);
   const editorRef = useRef<TipTapEditor | null>(null);
+  const editorWrapperRef = useRef<HTMLDivElement | null>(null);
   const demoFlagsApplied = useRef(false);
 
   // Refs for ambient scanning pipeline (don't trigger re-renders)
@@ -28,6 +37,29 @@ export default function Home() {
       clearTimeout(debounceTimerRef.current);
       abortControllerRef.current?.abort();
     };
+  }, []);
+
+  // Event delegation: listen for clicks on .empathy-highlight spans
+  useEffect(() => {
+    const wrapper = editorWrapperRef.current;
+    if (!wrapper) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest?.(
+        ".empathy-highlight"
+      ) as HTMLElement | null;
+      if (!target) return;
+
+      const reason = target.getAttribute("data-reason") || "";
+      const suggestion = target.getAttribute("data-suggestion") || "";
+      if (!reason && !suggestion) return;
+
+      const anchor = target.getBoundingClientRect();
+      setPopover({ anchor, reason, suggestion });
+    };
+
+    wrapper.addEventListener("click", handleClick);
+    return () => wrapper.removeEventListener("click", handleClick);
   }, []);
 
   /**
@@ -126,6 +158,9 @@ export default function Home() {
    */
   const handleTextUpdate = useCallback(
     (text: string) => {
+      // Auto-dismiss popover when user starts typing
+      setPopover(null);
+
       clearTimeout(debounceTimerRef.current);
 
       debounceTimerRef.current = setTimeout(() => {
@@ -175,13 +210,23 @@ export default function Home() {
       </header>
 
       {/* Editor */}
-      <section className="flex-1 hero-enter stagger-1">
+      <section ref={editorWrapperRef} className="flex-1 hero-enter stagger-1">
         <Editor
           content={DEMO_CONTENT}
           onUpdate={handleTextUpdate}
           onEditorReady={handleEditorReady}
         />
       </section>
+
+      {/* Empathy flag popover */}
+      {popover && (
+        <EmpathyPopover
+          reason={popover.reason}
+          suggestion={popover.suggestion}
+          anchor={popover.anchor}
+          onClose={() => setPopover(null)}
+        />
+      )}
 
       {/* Footer with loading indicator */}
       <footer className="py-8 hero-enter stagger-2">
