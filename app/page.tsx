@@ -201,10 +201,13 @@ export default function Home() {
     abortControllerRef.current?.abort();
     clearTimeout(debounceTimerRef.current);
 
+    // clearContent() triggers onUpdate synchronously, which restarts the
+    // debounce timer. Setting lastAnalyzedTextRef to "" first ensures the
+    // debounce guard skips re-analysis of empty content.
+    lastAnalyzedTextRef.current = "";
     editor.commands.clearContent();
     setFlags([]);
     setPopover(null);
-    lastAnalyzedTextRef.current = "";
   }, []);
 
   /**
@@ -217,11 +220,14 @@ export default function Home() {
     abortControllerRef.current?.abort();
     clearTimeout(debounceTimerRef.current);
 
+    // setContent() triggers onUpdate synchronously, which restarts the
+    // debounce timer. Seed the text-change guard after setContent so the
+    // debounce guard skips re-analysis of restored demo content.
     editor.commands.setContent(DEMO_CONTENT);
+    lastAnalyzedTextRef.current = editor.getText();
     applyFlags(editor, DEMO_FLAGS);
     setFlags(DEMO_FLAGS);
     setPopover(null);
-    lastAnalyzedTextRef.current = editor.getText();
   }, []);
 
   return (
@@ -243,6 +249,7 @@ export default function Home() {
         </p>
         <div className="flex gap-2 mt-3">
           <button
+            type="button"
             className="btn-ghost"
             onClick={handleClear}
             style={{ fontSize: "var(--type-2xs)" }}
@@ -250,6 +257,7 @@ export default function Home() {
             Clear
           </button>
           <button
+            type="button"
             className="btn-ghost"
             onClick={handleReset}
             style={{ fontSize: "var(--type-2xs)" }}
