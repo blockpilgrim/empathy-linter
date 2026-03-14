@@ -191,6 +191,39 @@ export default function Home() {
     }
   }, []);
 
+  /**
+   * Clear the editor: remove all content, flags, and reset analysis state.
+   */
+  const handleClear = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    abortControllerRef.current?.abort();
+    clearTimeout(debounceTimerRef.current);
+
+    editor.commands.clearContent();
+    setFlags([]);
+    setPopover(null);
+    lastAnalyzedTextRef.current = "";
+  }, []);
+
+  /**
+   * Reset to demo content: re-insert the demo text and apply pre-computed flags.
+   */
+  const handleReset = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    abortControllerRef.current?.abort();
+    clearTimeout(debounceTimerRef.current);
+
+    editor.commands.setContent(DEMO_CONTENT);
+    applyFlags(editor, DEMO_FLAGS);
+    setFlags(DEMO_FLAGS);
+    setPopover(null);
+    lastAnalyzedTextRef.current = editor.getText();
+  }, []);
+
   return (
     <main className="min-h-screen flex flex-col w-full max-w-2xl mx-auto px-6">
       {/* Header */}
@@ -208,6 +241,22 @@ export default function Home() {
           Scan your docs for assumed knowledge, unexplained jargon, and missing
           context.
         </p>
+        <div className="flex gap-2 mt-3">
+          <button
+            className="btn-ghost"
+            onClick={handleClear}
+            style={{ fontSize: "var(--type-2xs)" }}
+          >
+            Clear
+          </button>
+          <button
+            className="btn-ghost"
+            onClick={handleReset}
+            style={{ fontSize: "var(--type-2xs)" }}
+          >
+            Try demo text
+          </button>
+        </div>
       </header>
 
       {/* Editor */}

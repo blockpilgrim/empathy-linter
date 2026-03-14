@@ -27,6 +27,12 @@ const iaMono = localFont({
 export const metadata: Metadata = {
   title: "Empathy Linter",
   description: "Scan technical docs for assumed knowledge, unexplained jargon, and missing context.",
+  openGraph: {
+    title: "Empathy Linter",
+    description:
+      "AI-powered tool that scans technical documentation for assumed knowledge, unexplained jargon, and missing context.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
