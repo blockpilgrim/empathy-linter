@@ -13,7 +13,7 @@ You are a refactoring specialist. Analyze the codebase and identify opportunitie
 
 ## Identify
 1. Pattern violations, duplication, complexity hotspots
-2. Abstraction opportunities, dead code, naming inconsistencies
+2. Abstraction opportunities, simplification opportunities, dead code, naming inconsistencies
 
 ## Output
 Prioritized list (High/Medium/Low) with location, current state, suggested improvement, and estimated effort per item. Include suggestions for CONVENTIONS.md updates.

@@ -17,7 +17,6 @@ interface PopoverState {
 }
 
 export default function Home() {
-  const [flags, setFlags] = useState<EmpathyFlagInput[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [popover, setPopover] = useState<PopoverState | null>(null);
   const editorRef = useRef<TipTapEditor | null>(null);
@@ -37,6 +36,12 @@ export default function Home() {
       clearTimeout(debounceTimerRef.current);
       abortControllerRef.current?.abort();
     };
+  }, []);
+
+  /** Cancel any in-flight analysis request and pending debounce timer. */
+  const cancelPendingAnalysis = useCallback(() => {
+    abortControllerRef.current?.abort();
+    clearTimeout(debounceTimerRef.current);
   }, []);
 
   // Event delegation: listen for clicks on .empathy-highlight spans
@@ -96,7 +101,6 @@ export default function Home() {
       const decoder = new TextDecoder();
       let accumulated = "";
       let previousFlagCount = 0;
-      let latestFlags: EmpathyFlagInput[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -114,31 +118,29 @@ export default function Home() {
           (state === "successful-parse" || state === "repaired-parse") &&
           parsed &&
           typeof parsed === "object" &&
-          "flags" in parsed &&
-          Array.isArray((parsed as { flags: unknown[] }).flags)
+          "flags" in parsed
         ) {
-          const partialFlags = (parsed as { flags: EmpathyFlagInput[] }).flags;
+          const result = parsed as Record<string, unknown>;
+          if (!Array.isArray(result.flags)) continue;
+
+          const partialFlags = result.flags as Partial<EmpathyFlagInput>[];
 
           // Only re-apply marks when a new flag arrives (not on every chunk).
           // Filter to complete flags to avoid marks with undefined metadata.
           const completeFlags = partialFlags.filter(
-            (f) => f.exact_phrase && f.reason && f.suggestion
+            (f): f is EmpathyFlagInput =>
+              !!f.exact_phrase && !!f.reason && !!f.suggestion
           );
 
           const editor = editorRef.current;
           if (editor && completeFlags.length > previousFlagCount) {
             previousFlagCount = completeFlags.length;
-            latestFlags = completeFlags;
             setPopover(null);
             applyFlags(editor, completeFlags);
           }
         }
       }
 
-      // Update React state once after streaming completes (not per-chunk)
-      if (latestFlags.length > 0) {
-        setFlags(latestFlags);
-      }
     } catch (err: unknown) {
       // AbortError is expected when we cancel a stale request — ignore it
       if (err instanceof DOMException && err.name === "AbortError") return;
@@ -183,7 +185,6 @@ export default function Home() {
     if (!demoFlagsApplied.current) {
       demoFlagsApplied.current = true;
       applyFlags(editor, DEMO_FLAGS);
-      setFlags(DEMO_FLAGS);
 
       // Store demo text as the last analyzed text so the debounce guard
       // doesn't re-analyze the pre-loaded content unnecessarily.
@@ -198,15 +199,13 @@ export default function Home() {
     const editor = editorRef.current;
     if (!editor) return;
 
-    abortControllerRef.current?.abort();
-    clearTimeout(debounceTimerRef.current);
+    cancelPendingAnalysis();
 
     // clearContent() triggers onUpdate synchronously, which restarts the
     // debounce timer. Setting lastAnalyzedTextRef to "" first ensures the
     // debounce guard skips re-analysis of empty content.
     lastAnalyzedTextRef.current = "";
     editor.commands.clearContent();
-    setFlags([]);
     setPopover(null);
   }, []);
 
@@ -217,8 +216,7 @@ export default function Home() {
     const editor = editorRef.current;
     if (!editor) return;
 
-    abortControllerRef.current?.abort();
-    clearTimeout(debounceTimerRef.current);
+    cancelPendingAnalysis();
 
     // setContent() triggers onUpdate synchronously, which restarts the
     // debounce timer. Seed the text-change guard after setContent so the
@@ -226,7 +224,6 @@ export default function Home() {
     editor.commands.setContent(DEMO_CONTENT);
     lastAnalyzedTextRef.current = editor.getText();
     applyFlags(editor, DEMO_FLAGS);
-    setFlags(DEMO_FLAGS);
     setPopover(null);
   }, []);
 

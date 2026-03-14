@@ -1,12 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { LINT_SYSTEM, LINT_USER } from "./prompts";
 import { EmpathyFlagSchema, LintResultSchema } from "./schemas";
-import {
-  GOLDEN_SAMPLES,
-  EDGE_CASE_SAMPLES,
-  ALL_SAMPLES,
-  type GoldenSample,
-} from "./eval/golden-dataset";
+import { GOLDEN_SAMPLES } from "./eval/golden-dataset";
 
 // ==========================================================================
 // LINT_SYSTEM — structural validation of the system prompt
@@ -208,120 +203,6 @@ describe("LINT_USER", () => {
     // but the function should not crash
     expect(result).toContain(input);
   });
-});
-
-// ==========================================================================
-// Golden dataset — structural integrity
-// ==========================================================================
-
-describe("Golden dataset integrity", () => {
-  it("contains at least 5 jargon-heavy samples", () => {
-    expect(GOLDEN_SAMPLES.length).toBeGreaterThanOrEqual(5);
-  });
-
-  it("contains edge-case samples", () => {
-    expect(EDGE_CASE_SAMPLES.length).toBeGreaterThanOrEqual(2);
-  });
-
-  it("covers diverse domains", () => {
-    const domains = new Set(GOLDEN_SAMPLES.map((s) => s.domain));
-    expect(domains.size).toBeGreaterThanOrEqual(4);
-  });
-
-  it("every sample has a unique id", () => {
-    const ids = ALL_SAMPLES.map((s) => s.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  describe.each(ALL_SAMPLES)("sample '$id' ($domain)", (sample: GoldenSample) => {
-    it("has non-empty text", () => {
-      expect(sample.text.trim().length).toBeGreaterThan(0);
-    });
-
-    it("has at least one expected flag (for jargon samples) or zero (for edge cases)", () => {
-      if (GOLDEN_SAMPLES.includes(sample)) {
-        expect(sample.expectedFlags.length).toBeGreaterThanOrEqual(3);
-      }
-      // Edge cases may have zero expected flags — that is valid
-    });
-
-    it("every expectedFlag.exact_phrase appears verbatim in the text", () => {
-      for (const flag of sample.expectedFlags) {
-        expect(sample.text).toContain(flag.exact_phrase);
-      }
-    });
-
-    it("every expectedFlag has a non-empty 'why' explanation", () => {
-      for (const flag of sample.expectedFlags) {
-        expect(flag.why.trim().length).toBeGreaterThan(0);
-      }
-    });
-
-    it("every shouldNotFlag term appears verbatim in the text", () => {
-      for (const term of sample.shouldNotFlag) {
-        expect(sample.text).toContain(term);
-      }
-    });
-
-    it("expectedFlags and shouldNotFlag do not overlap", () => {
-      const flagPhrases = new Set(sample.expectedFlags.map((f) => f.exact_phrase));
-      for (const term of sample.shouldNotFlag) {
-        expect(flagPhrases.has(term)).toBe(false);
-      }
-    });
-  });
-});
-
-// ==========================================================================
-// Golden dataset flags — schema conformance
-//
-// Validates that the annotated expected flags would pass Zod validation
-// if returned by the LLM (with a plausible reason and suggestion).
-// This does NOT duplicate schemas.test.ts — it tests the golden dataset
-// entries specifically, confirming they represent valid schema shapes.
-// ==========================================================================
-
-describe("Golden dataset flags conform to EmpathyFlagSchema", () => {
-  const allExpectedFlags = GOLDEN_SAMPLES.flatMap((s) =>
-    s.expectedFlags.map((f) => ({
-      sampleId: s.id,
-      exact_phrase: f.exact_phrase,
-      why: f.why,
-    }))
-  );
-
-  it.each(allExpectedFlags)(
-    "'$exact_phrase' from sample $sampleId passes schema validation",
-    ({ exact_phrase, why }) => {
-      // Construct a plausible flag as the LLM would return it
-      const flag = {
-        exact_phrase,
-        reason: why,
-        suggestion: `Consider adding context for "${exact_phrase}" on first use.`,
-      };
-
-      const result = EmpathyFlagSchema.safeParse(flag);
-      expect(result.success).toBe(true);
-    }
-  );
-});
-
-describe("Golden dataset flags conform to LintResultSchema as a batch", () => {
-  for (const sample of GOLDEN_SAMPLES) {
-    it(`all flags from '${sample.id}' pass as a LintResult`, () => {
-      const flags = sample.expectedFlags.map((f) => ({
-        exact_phrase: f.exact_phrase,
-        reason: f.why,
-        suggestion: `Consider adding context for "${f.exact_phrase}".`,
-      }));
-
-      const result = LintResultSchema.safeParse({ flags });
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.flags.length).toBe(sample.expectedFlags.length);
-      }
-    });
-  }
 });
 
 // ==========================================================================

@@ -22,8 +22,8 @@ export default function EmpathyPopover({
   const [position, setPosition] = useState<{
     top: number;
     left: number;
-    flipped: boolean;
-  }>({ top: 0, left: 0, flipped: false });
+  }>({ top: 0, left: 0 });
+  const [positioned, setPositioned] = useState(false);
 
   const computePosition = useCallback(() => {
     const popoverEl = ref.current;
@@ -35,12 +35,10 @@ export default function EmpathyPopover({
 
     // Default: position below the highlight
     let top = anchor.bottom + gap;
-    let flipped = false;
 
     // Flip above if too close to viewport bottom
     if (top + popoverRect.height > window.innerHeight - viewportPadding) {
       top = anchor.top - popoverRect.height - gap;
-      flipped = true;
     }
 
     // Center horizontally on the highlight, clamped to viewport edges
@@ -50,7 +48,8 @@ export default function EmpathyPopover({
       Math.min(left, window.innerWidth - popoverRect.width - viewportPadding)
     );
 
-    setPosition({ top, left, flipped });
+    setPosition({ top, left });
+    setPositioned(true);
   }, [anchor]);
 
   // Compute position after initial render (needs the DOM element for dimensions)
@@ -98,8 +97,7 @@ export default function EmpathyPopover({
       style={{
         top: position.top,
         left: position.left,
-        // Start invisible for measurement, then show after position is computed
-        visibility: position.top === 0 && position.left === 0 ? "hidden" : "visible",
+        visibility: positioned ? "visible" : "hidden",
       }}
     >
       {/* Dismiss button */}

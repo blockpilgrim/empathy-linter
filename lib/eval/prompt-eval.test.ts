@@ -20,6 +20,49 @@ import {
 // ==========================================================================
 
 describe("Golden dataset evaluation readiness", () => {
+  describe("structural integrity", () => {
+    it("contains at least 5 jargon-heavy samples", () => {
+      expect(GOLDEN_SAMPLES.length).toBeGreaterThanOrEqual(5);
+    });
+
+    it("every sample has a unique id", () => {
+      const ids = ALL_SAMPLES.map((s) => s.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it.each(ALL_SAMPLES)(
+      "sample '$id' has non-empty text",
+      (sample: GoldenSample) => {
+        expect(sample.text.trim().length).toBeGreaterThan(0);
+      }
+    );
+
+    it.each(GOLDEN_SAMPLES)(
+      "sample '$id' has at least 3 expected flags",
+      (sample: GoldenSample) => {
+        expect(sample.expectedFlags.length).toBeGreaterThanOrEqual(3);
+      }
+    );
+
+    it.each(GOLDEN_SAMPLES)(
+      "sample '$id' — every expectedFlag has a non-empty 'why' explanation",
+      (sample: GoldenSample) => {
+        for (const flag of sample.expectedFlags) {
+          expect(flag.why.trim().length).toBeGreaterThan(0);
+        }
+      }
+    );
+
+    it.each(ALL_SAMPLES)(
+      "sample '$id' — every shouldNotFlag term appears verbatim in the text",
+      (sample: GoldenSample) => {
+        for (const term of sample.shouldNotFlag) {
+          expect(sample.text).toContain(term);
+        }
+      }
+    );
+  });
+
   describe("MAX_TEXT_LENGTH compliance", () => {
     it.each(ALL_SAMPLES)(
       "sample '$id' text is within MAX_TEXT_LENGTH ($MAX_TEXT_LENGTH chars)",
@@ -295,4 +338,52 @@ describe("Golden dataset covers WHAT TO FLAG categories", () => {
     const domains = new Set(GOLDEN_SAMPLES.map((s) => s.domain));
     expect(domains.size).toBeGreaterThanOrEqual(4);
   });
+});
+
+// ==========================================================================
+// Golden dataset schema conformance
+//
+// Validates that the annotated expected flags would pass Zod validation
+// if returned by the LLM (with a plausible reason and suggestion).
+// ==========================================================================
+
+describe("Golden dataset schema conformance", () => {
+  const allExpectedFlags = GOLDEN_SAMPLES.flatMap((s) =>
+    s.expectedFlags.map((f) => ({
+      sampleId: s.id,
+      exact_phrase: f.exact_phrase,
+      why: f.why,
+    }))
+  );
+
+  it.each(allExpectedFlags)(
+    "'$exact_phrase' from sample $sampleId passes EmpathyFlagSchema validation",
+    ({ exact_phrase, why }) => {
+      const flag = {
+        exact_phrase,
+        reason: why,
+        suggestion: `Consider adding context for "${exact_phrase}" on first use.`,
+      };
+
+      const result = EmpathyFlagSchema.safeParse(flag);
+      expect(result.success).toBe(true);
+    }
+  );
+
+  it.each(GOLDEN_SAMPLES)(
+    "all flags from '$id' pass as a LintResult batch",
+    (sample: GoldenSample) => {
+      const flags = sample.expectedFlags.map((f) => ({
+        exact_phrase: f.exact_phrase,
+        reason: f.why,
+        suggestion: `Consider adding context for "${f.exact_phrase}".`,
+      }));
+
+      const result = LintResultSchema.safeParse({ flags });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.flags.length).toBe(sample.expectedFlags.length);
+      }
+    }
+  );
 });

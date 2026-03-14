@@ -24,6 +24,9 @@ export default function Editor({
   const onEditorReadyRef = useRef(onEditorReady);
   onEditorReadyRef.current = onEditorReady;
 
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -47,7 +50,7 @@ export default function Editor({
     ],
     content,
     onUpdate: ({ editor }) => {
-      onUpdate?.(editor.getText());
+      onUpdateRef.current?.(editor.getText());
     },
   });
 
