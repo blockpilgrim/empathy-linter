@@ -135,7 +135,6 @@ export default function Home() {
           const editor = editorRef.current;
           if (editor && completeFlags.length > previousFlagCount) {
             previousFlagCount = completeFlags.length;
-            setPopover(null);
             applyFlags(editor, completeFlags);
           }
         }

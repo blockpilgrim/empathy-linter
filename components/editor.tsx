@@ -27,6 +27,12 @@ export default function Editor({
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
 
+  // Track last text content so we can distinguish real text edits from
+  // mark-only updates (e.g., applyFlags). Mark changes trigger TipTap's
+  // onUpdate but shouldn't notify the parent — that would dismiss popovers
+  // and reset debounce timers unnecessarily.
+  const lastTextRef = useRef<string>("");
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -50,12 +56,17 @@ export default function Editor({
     ],
     content,
     onUpdate: ({ editor }) => {
-      onUpdateRef.current?.(editor.getText());
+      const text = editor.getText();
+      if (text !== lastTextRef.current) {
+        lastTextRef.current = text;
+        onUpdateRef.current?.(text);
+      }
     },
   });
 
   useEffect(() => {
     if (editor) {
+      lastTextRef.current = editor.getText();
       onEditorReadyRef.current?.(editor);
     }
   }, [editor]);
