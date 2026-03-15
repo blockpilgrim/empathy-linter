@@ -6,7 +6,7 @@ import type { Editor as TipTapEditor } from "@tiptap/react";
 import Editor from "@/components/editor";
 import EmpathyPopover from "@/components/empathy-popover";
 import { DEMO_CONTENT, DEMO_FLAGS } from "@/lib/demo-content";
-import { applyFlags, clearEmpathyMarks, applyFlagsIncremental } from "@/lib/apply-flags";
+import { applyFlags } from "@/lib/apply-flags";
 import { DEBOUNCE_MS } from "@/lib/config";
 import type { EmpathyFlagInput } from "@/lib/schemas";
 
@@ -14,6 +14,7 @@ interface PopoverState {
   anchor: DOMRect;
   reason: string;
   suggestion: string;
+  exactPhrase: string;
 }
 
 export default function Home() {
@@ -22,6 +23,9 @@ export default function Home() {
   const editorRef = useRef<TipTapEditor | null>(null);
   const editorWrapperRef = useRef<HTMLDivElement | null>(null);
   const demoFlagsApplied = useRef(false);
+
+  // Ref for tracking which flag the popover is anchored to (avoids closure staleness)
+  const popoverPhraseRef = useRef<string | null>(null);
 
   // Refs for ambient scanning pipeline (don't trigger re-renders)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -57,10 +61,12 @@ export default function Home() {
 
       const reason = target.getAttribute("data-reason") || "";
       const suggestion = target.getAttribute("data-suggestion") || "";
+      const exactPhrase = target.textContent || "";
       if (!reason && !suggestion) return;
 
       const anchor = target.getBoundingClientRect();
-      setPopover({ anchor, reason, suggestion });
+      popoverPhraseRef.current = exactPhrase;
+      setPopover({ anchor, reason, suggestion, exactPhrase });
     };
 
     wrapper.addEventListener("click", handleClick);
@@ -100,8 +106,7 @@ export default function Home() {
 
       const decoder = new TextDecoder();
       let accumulated = "";
-      let previousFlagCount = 0;
-      let marksCleared = false;
+      let previousFingerprint = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -132,22 +137,33 @@ export default function Home() {
               !!f.exact_phrase && !!f.reason && !!f.suggestion
           );
 
+          // Re-apply marks when flags change (new flags or content updates).
+          // Uses a fingerprint of all flag content to detect any change,
+          // not just new flag count — so suggestion text updates mid-stream.
+          const fingerprint = JSON.stringify(completeFlags);
           const editor = editorRef.current;
-          if (editor && completeFlags.length > previousFlagCount) {
-            // Clear old marks once on first new flag — deferred from response
-            // start so old highlights stay visible if the stream errors before
-            // producing any flags.
-            if (!marksCleared) {
-              setPopover(null);
-              clearEmpathyMarks(editor);
-              marksCleared = true;
-            }
+          if (editor && fingerprint !== previousFingerprint) {
+            previousFingerprint = fingerprint;
+            applyFlags(editor, completeFlags);
 
-            // Apply only NEW flags incrementally — avoids removing and
-            // re-applying all marks on every streaming chunk.
-            const newFlags = completeFlags.slice(previousFlagCount);
-            previousFlagCount = completeFlags.length;
-            applyFlagsIncremental(editor, newFlags);
+            // Update popover content if it's showing a flag whose text just changed
+            const activePhrase = popoverPhraseRef.current;
+            if (activePhrase) {
+              const matchingFlag = completeFlags.find(
+                (f) => f.exact_phrase === activePhrase
+              );
+              if (matchingFlag) {
+                setPopover((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        reason: matchingFlag.reason,
+                        suggestion: matchingFlag.suggestion,
+                      }
+                    : null
+                );
+              }
+            }
           }
         }
       }
@@ -173,6 +189,7 @@ export default function Home() {
   const handleTextUpdate = useCallback(
     (text: string) => {
       // Auto-dismiss popover when user starts typing
+      popoverPhraseRef.current = null;
       setPopover(null);
 
       clearTimeout(debounceTimerRef.current);
@@ -217,6 +234,7 @@ export default function Home() {
     // debounce guard skips re-analysis of empty content.
     lastAnalyzedTextRef.current = "";
     editor.commands.clearContent();
+    popoverPhraseRef.current = null;
     setPopover(null);
   }, []);
 
@@ -235,6 +253,7 @@ export default function Home() {
     editor.commands.setContent(DEMO_CONTENT);
     lastAnalyzedTextRef.current = editor.getText();
     applyFlags(editor, DEMO_FLAGS);
+    popoverPhraseRef.current = null;
     setPopover(null);
   }, []);
 
@@ -290,7 +309,11 @@ export default function Home() {
           reason={popover.reason}
           suggestion={popover.suggestion}
           anchor={popover.anchor}
-          onClose={() => setPopover(null)}
+          isLoading={isAnalyzing}
+          onClose={() => {
+            popoverPhraseRef.current = null;
+            setPopover(null);
+          }}
         />
       )}
 

@@ -5,7 +5,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import EmpathyFlag from "./empathy-extension";
-import { applyFlags, clearEmpathyMarks, applyFlagsIncremental } from "./apply-flags";
+import { applyFlags } from "./apply-flags";
 import type { EmpathyFlagInput } from "./schemas";
 
 /** Create a minimal TipTap editor with the empathy flag extension. */
@@ -226,129 +226,5 @@ describe("applyFlags", () => {
 
     applyFlags(editor, []);
     expect(countMarks(editor)).toBe(0);
-  });
-});
-
-describe("clearEmpathyMarks", () => {
-  let editor: Editor;
-
-  afterEach(() => {
-    editor?.destroy();
-  });
-
-  it("removes all empathy marks from the document", () => {
-    editor = createTestEditor("<p>Deploy the canary build to staging.</p>");
-
-    applyFlags(editor, [
-      { exact_phrase: "canary build", reason: "r1", suggestion: "s1" },
-      { exact_phrase: "staging", reason: "r2", suggestion: "s2" },
-    ]);
-    expect(countMarks(editor)).toBe(2);
-
-    clearEmpathyMarks(editor);
-    expect(countMarks(editor)).toBe(0);
-  });
-
-  it("no-ops when no marks exist", () => {
-    editor = createTestEditor("<p>Simple text here.</p>");
-
-    expect(() => clearEmpathyMarks(editor)).not.toThrow();
-    expect(countMarks(editor)).toBe(0);
-  });
-
-  it("preserves document text content", () => {
-    editor = createTestEditor("<p>Deploy the canary build to staging.</p>");
-
-    applyFlags(editor, [
-      { exact_phrase: "canary build", reason: "r", suggestion: "s" },
-    ]);
-    const textBefore = editor.getText();
-
-    clearEmpathyMarks(editor);
-
-    expect(editor.getText()).toBe(textBefore);
-  });
-});
-
-describe("applyFlagsIncremental", () => {
-  let editor: Editor;
-
-  afterEach(() => {
-    editor?.destroy();
-  });
-
-  it("adds marks without removing existing ones", () => {
-    editor = createTestEditor(
-      "<p>Deploy the canary build to the staging cluster.</p>"
-    );
-
-    // Apply first flag
-    applyFlagsIncremental(editor, [
-      { exact_phrase: "canary build", reason: "r1", suggestion: "s1" },
-    ]);
-    expect(countMarks(editor)).toBe(1);
-
-    // Apply second flag — should add, not replace
-    applyFlagsIncremental(editor, [
-      { exact_phrase: "staging cluster", reason: "r2", suggestion: "s2" },
-    ]);
-    expect(countMarks(editor)).toBe(2);
-
-    const marks = collectMarks(editor);
-    expect(marks[0].text).toBe("canary build");
-    expect(marks[1].text).toBe("staging cluster");
-  });
-
-  it("handles empty flags array", () => {
-    editor = createTestEditor("<p>Some text.</p>");
-
-    expect(() => applyFlagsIncremental(editor, [])).not.toThrow();
-    expect(countMarks(editor)).toBe(0);
-  });
-
-  it("skips unmatched phrases silently", () => {
-    editor = createTestEditor("<p>Simple text here.</p>");
-
-    applyFlagsIncremental(editor, [
-      { exact_phrase: "nonexistent", reason: "r", suggestion: "s" },
-    ]);
-
-    expect(countMarks(editor)).toBe(0);
-  });
-
-  it("simulates streaming: clear then incrementally add", () => {
-    editor = createTestEditor(
-      "<p>The canary build uses a staging cluster with PgBouncer.</p>"
-    );
-
-    // Simulate demo flags already applied
-    applyFlags(editor, [
-      { exact_phrase: "canary build", reason: "old", suggestion: "old" },
-    ]);
-    expect(countMarks(editor)).toBe(1);
-
-    // Simulate streaming start: clear old marks
-    clearEmpathyMarks(editor);
-    expect(countMarks(editor)).toBe(0);
-
-    // Simulate streaming: flags arrive one at a time
-    applyFlagsIncremental(editor, [
-      { exact_phrase: "canary build", reason: "new1", suggestion: "new1" },
-    ]);
-    expect(countMarks(editor)).toBe(1);
-
-    applyFlagsIncremental(editor, [
-      { exact_phrase: "staging cluster", reason: "new2", suggestion: "new2" },
-    ]);
-    expect(countMarks(editor)).toBe(2);
-
-    applyFlagsIncremental(editor, [
-      { exact_phrase: "PgBouncer", reason: "new3", suggestion: "new3" },
-    ]);
-    expect(countMarks(editor)).toBe(3);
-
-    // Verify all marks have new metadata
-    const marks = collectMarks(editor);
-    expect(marks.every((m) => m.reason.startsWith("new"))).toBe(true);
   });
 });

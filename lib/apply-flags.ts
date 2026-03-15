@@ -93,74 +93,7 @@ function findPhraseInMapping(
 }
 
 /**
- * Remove all empathyFlag marks from the document.
- * Dispatches a single transaction. No-ops if no marks exist.
- */
-export function clearEmpathyMarks(editor: TipTapEditor): void {
-  const { doc } = editor.state;
-  const markType = editor.schema.marks.empathyFlag;
-  const { tr } = editor.state;
-  let hasRemovals = false;
-
-  doc.descendants((node, pos) => {
-    if (node.isText) {
-      const marks = node.marks.filter((m) => m.type === markType);
-      if (marks.length > 0) {
-        hasRemovals = true;
-        marks.forEach((mark) => {
-          tr.removeMark(pos, pos + node.nodeSize, mark);
-        });
-      }
-    }
-  });
-
-  if (hasRemovals) {
-    editor.view.dispatch(tr);
-  }
-}
-
-/**
- * Apply empathy flags incrementally — adds marks without removing existing ones.
- * Used during streaming to avoid the remove-all-then-reapply overhead on each
- * new flag. Call clearEmpathyMarks() once before the streaming loop, then
- * applyFlagsIncremental() for each batch of new flags.
- *
- * Builds the text-to-position mapping once per call and reuses it for all flags.
- */
-export function applyFlagsIncremental(
-  editor: TipTapEditor,
-  flags: EmpathyFlagInput[]
-): void {
-  if (flags.length === 0) return;
-
-  const markType = editor.schema.marks.empathyFlag;
-  const { tr } = editor.state;
-  const mapping = buildTextMapping(editor);
-  let hasChanges = false;
-
-  for (const flag of flags) {
-    if (!flag.exact_phrase) continue;
-
-    const range = findPhraseInMapping(mapping, flag.exact_phrase);
-    if (!range) continue;
-
-    const mark = markType.create({
-      id: crypto.randomUUID(),
-      reason: flag.reason,
-      suggestion: flag.suggestion,
-    });
-
-    tr.addMark(range.from, range.to, mark);
-    hasChanges = true;
-  }
-
-  if (hasChanges) {
-    editor.view.dispatch(tr);
-  }
-}
-
-/**
- * Apply empathy flags to the editor as inline marks (full replace).
+ * Apply empathy flags to the editor as inline marks.
  *
  * 1. Removes all existing `empathyFlag` marks from the document.
  * 2. For each flag, searches the document text for the `exact_phrase`.

@@ -130,9 +130,8 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Text-change guard prevents redundant analysis** — store the last analyzed text in a ref. Skip the API call if the current text matches. Also seed this ref with the demo content on mount to avoid re-analyzing pre-loaded content.
 - **Cleanup on unmount** — clear the debounce timer and abort any in-flight request in the `useEffect` cleanup function. Prevents memory leaks and stale requests.
 - **Loading indicator in the footer** — three `.loading-dot` spans with staggered `animationDelay` provide a subtle pulsing indicator. Non-disruptive positioning in the footer keeps the editor area clean. Use `role="status"` for screen reader announcements.
-- **Filter streaming flags to complete objects** — `parsePartialJson` may return flags with `undefined` fields during streaming. Filter to flags where `exact_phrase`, `reason`, and `suggestion` are all truthy before applying marks.
-- **Incremental mark application during streaming** — use `clearEmpathyMarks()` once (deferred to first new flag) then `applyFlagsIncremental()` for each batch of new flags. This avoids the O(n²) pattern of removing-and-reapplying all marks on every chunk. Only `applyFlags()` (full replace) is used for demo/reset.
-- **Defer mark clearing to first flag arrival** — don't clear old marks when the streaming response starts. Wait until the first complete flag is ready. This keeps old highlights visible if the stream errors before producing flags, avoiding a blank-state flash.
+- **Filter streaming flags to complete objects** — `parsePartialJson` may return flags with `undefined` fields during streaming. Filter to flags where `exact_phrase`, `reason`, and `suggestion` are all truthy before calling `applyFlags()`.
+- **Only re-apply marks when a new flag arrives** — track `previousFlagCount` and only call `applyFlags()` when `completeFlags.length > previousFlagCount`. This reduces calls from ~30 (every chunk) to ~8 (once per new flag).
 - **Update React state once after streaming completes** — call `setFlags()` after the `while` loop, not on every chunk. Reduces unnecessary re-renders from ~30 to 1 per analysis cycle.
 
 ## Popovers
@@ -146,7 +145,7 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Event delegation for mark clicks** — attach a single `click` listener to the editor wrapper section, not to individual highlight spans. Use `.closest(".empathy-highlight")` to find the clicked span. This works correctly as highlights are created/destroyed dynamically by TipTap.
 - **Read flag metadata from DOM `data-*` attributes** — the click handler reads `data-reason` and `data-suggestion` from the clicked span element, not from React state. This keeps the click handler independent of the React render cycle.
 - **Auto-dismiss on typing** — clear popover state in `handleTextUpdate` so the popover does not block writing flow.
-- **Dismiss popover before mark clearing** — when `clearEmpathyMarks()` is called at the start of streaming analysis, dismiss the popover first (`setPopover(null)`). The old highlight spans are destroyed; a lingering popover would be anchored to a non-existent element.
+- **Dismiss popover before mark replacement** — when `applyFlags()` is called during streaming analysis, dismiss the popover first (`setPopover(null)`). The old highlight spans are destroyed and replaced; a lingering popover would be anchored to a non-existent element.
 - **Ref-stabilized `onClose` in popover** — store `onClose` in a ref inside the popover component to decouple the event listener lifecycle from prop identity. Without this, inline `() => setPopover(null)` causes listener re-registration on every parent render.
 - **Popover rendered outside the editor wrapper** — render `<EmpathyPopover>` as a sibling to the editor section, not inside `.tiptap-editor-wrapper`, to avoid editor CSS scoping issues.
 
@@ -164,5 +163,4 @@ This document tracks established patterns, anti-patterns, and architectural conv
 - **Do NOT use state for debounce internals** — storing the debounce timer, last-analyzed text, or AbortController in React state causes unnecessary re-renders. Use `useRef` for values that the render cycle does not need to observe.
 - **Do NOT render popovers inside `.tiptap-editor-wrapper`** — editor CSS scoping (`.tiptap-editor-wrapper .tiptap`) can interfere with popover styles. Render popovers as siblings to the editor section.
 - **Do NOT attach click listeners to individual highlight spans** — TipTap dynamically creates/destroys spans when marks change. Use event delegation on a stable parent element instead.
-- **Do NOT call `applyFlags()` (full replace) during streaming** — each call removes all marks and re-applies all known flags, creating O(n²) doc walks as flags accumulate. Use `clearEmpathyMarks()` once then `applyFlagsIncremental()` for each new batch.
 - **Do NOT call `doc.textBetween()` + `doc.descendants()` per flag** — these each walk the entire document. Use `buildTextMapping()` once to build a reusable text + position map.

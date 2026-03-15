@@ -6,6 +6,7 @@ interface EmpathyPopoverProps {
   reason: string;
   suggestion: string;
   anchor: DOMRect;
+  isLoading?: boolean;
   onClose: () => void;
 }
 
@@ -13,6 +14,7 @@ export default function EmpathyPopover({
   reason,
   suggestion,
   anchor,
+  isLoading,
   onClose,
 }: EmpathyPopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -150,12 +152,22 @@ export default function EmpathyPopover({
           >
             Suggestion
           </p>
-          <p
-            className="text-foreground leading-relaxed"
-            style={{ fontSize: "var(--type-xs)" }}
-          >
-            {suggestion}
-          </p>
+          {isLoading && !suggestion ? (
+            <div className="space-y-1.5">
+              <div className="skeleton-line" style={{ width: "92%" }} />
+              <div className="skeleton-line" style={{ width: "68%" }} />
+            </div>
+          ) : (
+            <p
+              className="text-foreground leading-relaxed"
+              style={{ fontSize: "var(--type-xs)" }}
+            >
+              {suggestion}
+              {isLoading && (
+                <span className="suggestion-cursor" aria-hidden="true" />
+              )}
+            </p>
+          )}
         </div>
       </div>
     </div>
