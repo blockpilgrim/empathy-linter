@@ -36,8 +36,12 @@ export async function POST(req: NextRequest) {
     }
 
     // --- Rate limiting (only valid requests consume tokens) ---
+    // Prefer x-real-ip (set by Vercel edge, not spoofable by clients).
+    // Fall back to x-forwarded-for for other reverse proxies.
     const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      req.headers.get("x-real-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "unknown";
     const { allowed, remaining, retryAfter } = checkRateLimit(ip);
 
     if (!allowed) {
