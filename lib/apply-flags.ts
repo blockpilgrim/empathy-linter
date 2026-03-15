@@ -10,95 +10,165 @@ import type { EmpathyFlagInput } from "./schemas";
 const BLOCK_SEPARATOR = "\n";
 
 /**
- * Find the document position range for a plain-text substring.
- *
- * ProseMirror documents have a position system where structural nodes
- * (paragraphs, etc.) consume positions alongside text characters. This
- * function walks the document tree, accumulating a plain-text offset
- * (with block separators between paragraphs), and returns the document-level
- * `from`/`to` positions when the target phrase is found.
- *
- * Phrases must exist entirely within a single paragraph — cross-paragraph
- * matches are prevented by the block separator in the searchable text.
- *
- * Returns `null` if the phrase is not found in the document text.
+ * Pre-built mapping from plain-text offsets to ProseMirror document positions.
+ * Built once via a single doc.descendants() walk, then reused for all phrase
+ * lookups — eliminates redundant traversals when applying multiple flags.
  */
-function findPhrasePosition(
-  editor: TipTapEditor,
-  phrase: string
-): { from: number; to: number } | null {
+interface TextMapping {
+  /** Full searchable text with block separators between paragraphs. */
+  text: string;
+  /** Text node entries for offset-to-position translation. */
+  nodes: Array<{ textStart: number; textEnd: number; docPos: number }>;
+}
+
+/**
+ * Walk the document once and build a mapping from plain-text offsets to
+ * ProseMirror document positions. Also builds the searchable text string
+ * as a byproduct, avoiding a separate doc.textBetween() call.
+ */
+function buildTextMapping(editor: TipTapEditor): TextMapping {
   const doc = editor.state.doc;
-
-  // Build a searchable text string with block separators between paragraphs.
-  // doc.textBetween inserts `blockSeparator` between block nodes, giving us
-  // a faithful representation that prevents cross-paragraph false matches.
-  const fullText = doc.textBetween(0, doc.content.size, BLOCK_SEPARATOR);
-
-  const textIndex = fullText.indexOf(phrase);
-  if (textIndex === -1) return null;
-
-  // Walk the document to map the plain-text offset to document positions.
-  // Each text node contributes its length to the running text offset.
-  // Block boundaries contribute the separator length to the text offset
-  // but are not counted in document positions (they have their own position cost).
+  const nodes: TextMapping["nodes"] = [];
+  const textParts: string[] = [];
   let textOffset = 0;
-  let from: number | null = null;
-  let to: number | null = null;
-  const targetEnd = textIndex + phrase.length;
   let isFirstBlock = true;
 
   doc.descendants((node, pos) => {
-    // Short-circuit if we already found both positions
-    if (from !== null && to !== null) return false;
-
-    // Account for block separators between paragraphs
     if (node.isBlock && node.isTextblock) {
       if (!isFirstBlock) {
+        textParts.push(BLOCK_SEPARATOR);
         textOffset += BLOCK_SEPARATOR.length;
       }
       isFirstBlock = false;
     }
 
     if (node.isText && node.text) {
-      const nodeTextStart = textOffset;
-      const nodeTextEnd = textOffset + node.text.length;
-
-      // Check if the phrase start falls within this text node
-      if (from === null && textIndex >= nodeTextStart && textIndex < nodeTextEnd) {
-        // pos is the document position of the start of this text node.
-        // Add the offset within the node to get the exact `from` position.
-        from = pos + (textIndex - nodeTextStart);
-      }
-
-      // Check if the phrase end falls within this text node
-      if (to === null && targetEnd > nodeTextStart && targetEnd <= nodeTextEnd) {
-        to = pos + (targetEnd - nodeTextStart);
-      }
-
+      nodes.push({
+        textStart: textOffset,
+        textEnd: textOffset + node.text.length,
+        docPos: pos,
+      });
+      textParts.push(node.text);
       textOffset += node.text.length;
     }
 
-    // Don't descend into text nodes (they have no children anyway)
     return !node.isText;
   });
+
+  return { text: textParts.join(""), nodes };
+}
+
+/**
+ * Find the document position range for a plain-text substring using
+ * a pre-built text mapping. Avoids redundant doc traversals when
+ * looking up multiple phrases in the same call.
+ *
+ * Returns `null` if the phrase is not found.
+ */
+function findPhraseInMapping(
+  mapping: TextMapping,
+  phrase: string
+): { from: number; to: number } | null {
+  const textIndex = mapping.text.indexOf(phrase);
+  if (textIndex === -1) return null;
+
+  const targetEnd = textIndex + phrase.length;
+  let from: number | null = null;
+  let to: number | null = null;
+
+  for (const node of mapping.nodes) {
+    if (from === null && textIndex >= node.textStart && textIndex < node.textEnd) {
+      from = node.docPos + (textIndex - node.textStart);
+    }
+    if (to === null && targetEnd > node.textStart && targetEnd <= node.textEnd) {
+      to = node.docPos + (targetEnd - node.textStart);
+    }
+    if (from !== null && to !== null) break;
+  }
 
   if (from !== null && to !== null) {
     return { from, to };
   }
-
   return null;
 }
 
 /**
- * Apply empathy flags to the editor as inline marks.
+ * Remove all empathyFlag marks from the document.
+ * Dispatches a single transaction. No-ops if no marks exist.
+ */
+export function clearEmpathyMarks(editor: TipTapEditor): void {
+  const { doc } = editor.state;
+  const markType = editor.schema.marks.empathyFlag;
+  const { tr } = editor.state;
+  let hasRemovals = false;
+
+  doc.descendants((node, pos) => {
+    if (node.isText) {
+      const marks = node.marks.filter((m) => m.type === markType);
+      if (marks.length > 0) {
+        hasRemovals = true;
+        marks.forEach((mark) => {
+          tr.removeMark(pos, pos + node.nodeSize, mark);
+        });
+      }
+    }
+  });
+
+  if (hasRemovals) {
+    editor.view.dispatch(tr);
+  }
+}
+
+/**
+ * Apply empathy flags incrementally — adds marks without removing existing ones.
+ * Used during streaming to avoid the remove-all-then-reapply overhead on each
+ * new flag. Call clearEmpathyMarks() once before the streaming loop, then
+ * applyFlagsIncremental() for each batch of new flags.
+ *
+ * Builds the text-to-position mapping once per call and reuses it for all flags.
+ */
+export function applyFlagsIncremental(
+  editor: TipTapEditor,
+  flags: EmpathyFlagInput[]
+): void {
+  if (flags.length === 0) return;
+
+  const markType = editor.schema.marks.empathyFlag;
+  const { tr } = editor.state;
+  const mapping = buildTextMapping(editor);
+  let hasChanges = false;
+
+  for (const flag of flags) {
+    if (!flag.exact_phrase) continue;
+
+    const range = findPhraseInMapping(mapping, flag.exact_phrase);
+    if (!range) continue;
+
+    const mark = markType.create({
+      id: crypto.randomUUID(),
+      reason: flag.reason,
+      suggestion: flag.suggestion,
+    });
+
+    tr.addMark(range.from, range.to, mark);
+    hasChanges = true;
+  }
+
+  if (hasChanges) {
+    editor.view.dispatch(tr);
+  }
+}
+
+/**
+ * Apply empathy flags to the editor as inline marks (full replace).
  *
  * 1. Removes all existing `empathyFlag` marks from the document.
  * 2. For each flag, searches the document text for the `exact_phrase`.
  * 3. If found, applies the `empathyFlag` mark with `id`, `reason`, `suggestion`.
  *
  * All operations are batched into a single ProseMirror transaction to avoid
- * multiple editor re-renders. This is safe because `removeMark` does not alter
- * document structure or positions — only mark metadata on text nodes.
+ * multiple editor re-renders. Uses a pre-built text mapping to avoid redundant
+ * document traversals — one walk for all flags instead of two per flag.
  *
  * Edge cases:
  * - If `exact_phrase` appears multiple times, only the first occurrence is flagged.
@@ -112,16 +182,20 @@ export function applyFlags(
   const { doc } = editor.state;
   const markType = editor.schema.marks.empathyFlag;
   const { tr } = editor.state;
+  const mapping = buildTextMapping(editor);
 
   // Step 1: Remove all existing empathyFlag marks from the entire document.
   // We walk the document tree and remove marks via a transaction rather than
   // using editor.chain().unsetAllMarks(), which only operates on the selection.
   // removeMark does not change document structure or positions, so all positions
   // remain valid for the subsequent addMark calls in the same transaction.
+  let hasChanges = false;
+
   doc.descendants((node, pos) => {
     if (node.isText) {
       const marks = node.marks.filter((m) => m.type === markType);
       if (marks.length > 0) {
+        hasChanges = true;
         marks.forEach((mark) => {
           tr.removeMark(pos, pos + node.nodeSize, mark);
         });
@@ -129,11 +203,11 @@ export function applyFlags(
     }
   });
 
-  // Step 2: Apply new flags in the same transaction
+  // Step 2: Apply new flags using the pre-built mapping
   for (const flag of flags) {
     if (!flag.exact_phrase) continue;
 
-    const range = findPhrasePosition(editor, flag.exact_phrase);
+    const range = findPhraseInMapping(mapping, flag.exact_phrase);
     if (!range) continue;
 
     const mark = markType.create({
@@ -143,8 +217,12 @@ export function applyFlags(
     });
 
     tr.addMark(range.from, range.to, mark);
+    hasChanges = true;
   }
 
-  // Dispatch once — handles both removal and application
-  editor.view.dispatch(tr);
+  // Dispatch once — handles both removal and application.
+  // Skip if nothing changed to avoid unnecessary re-renders.
+  if (hasChanges) {
+    editor.view.dispatch(tr);
+  }
 }

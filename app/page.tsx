@@ -6,7 +6,7 @@ import type { Editor as TipTapEditor } from "@tiptap/react";
 import Editor from "@/components/editor";
 import EmpathyPopover from "@/components/empathy-popover";
 import { DEMO_CONTENT, DEMO_FLAGS } from "@/lib/demo-content";
-import { applyFlags } from "@/lib/apply-flags";
+import { applyFlags, clearEmpathyMarks, applyFlagsIncremental } from "@/lib/apply-flags";
 import { DEBOUNCE_MS } from "@/lib/config";
 import type { EmpathyFlagInput } from "@/lib/schemas";
 
@@ -101,6 +101,7 @@ export default function Home() {
       const decoder = new TextDecoder();
       let accumulated = "";
       let previousFlagCount = 0;
+      let marksCleared = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -125,7 +126,6 @@ export default function Home() {
 
           const partialFlags = result.flags as Partial<EmpathyFlagInput>[];
 
-          // Only re-apply marks when a new flag arrives (not on every chunk).
           // Filter to complete flags to avoid marks with undefined metadata.
           const completeFlags = partialFlags.filter(
             (f): f is EmpathyFlagInput =>
@@ -134,8 +134,20 @@ export default function Home() {
 
           const editor = editorRef.current;
           if (editor && completeFlags.length > previousFlagCount) {
+            // Clear old marks once on first new flag — deferred from response
+            // start so old highlights stay visible if the stream errors before
+            // producing any flags.
+            if (!marksCleared) {
+              setPopover(null);
+              clearEmpathyMarks(editor);
+              marksCleared = true;
+            }
+
+            // Apply only NEW flags incrementally — avoids removing and
+            // re-applying all marks on every streaming chunk.
+            const newFlags = completeFlags.slice(previousFlagCount);
             previousFlagCount = completeFlags.length;
-            applyFlags(editor, completeFlags);
+            applyFlagsIncremental(editor, newFlags);
           }
         }
       }
