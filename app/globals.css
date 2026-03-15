@@ -223,12 +223,24 @@ body > * {
   50% { opacity: 0.8; }
 }
 
-.loading-dot {
-  width: 3px;
-  height: 3px;
-  background: var(--accent);
+/* Lint status spinner — minimal rotating ring */
+@keyframes spinnerRotate {
+  to { transform: rotate(360deg); }
+}
+
+.lint-spinner {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--accent);
+  border-top-color: transparent;
   border-radius: 50%;
-  animation: loadingFade 1.5s ease-in-out infinite;
+  animation: spinnerRotate 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Crossfade text transition */
+.lint-status-text {
+  transition: opacity 0.2s ease;
 }
 
 /* Skeleton lines for popover loading state */
@@ -310,9 +322,13 @@ body > * {
 @media (prefers-reduced-motion: reduce) {
   .hero-enter,
   .popover-enter,
-  .loading-dot {
+  .lint-spinner {
     animation-duration: 0.01s !important;
     animation-delay: 0ms !important;
+  }
+
+  .lint-status-text {
+    transition-duration: 0.01s !important;
   }
 }
 

@@ -5,6 +5,7 @@ import { parsePartialJson } from "ai";
 import type { Editor as TipTapEditor } from "@tiptap/react";
 import Editor from "@/components/editor";
 import EmpathyPopover from "@/components/empathy-popover";
+import LintStatus from "@/components/lint-status";
 import { DEMO_CONTENT, DEMO_FLAGS } from "@/lib/demo-content";
 import { applyFlags } from "@/lib/apply-flags";
 import { DEBOUNCE_MS } from "@/lib/config";
@@ -319,21 +320,16 @@ export default function Home() {
 
       {/* Footer with loading indicator */}
       <footer className="py-8 hero-enter stagger-2">
-        <div className="flex items-center gap-3">
+        {isAnalyzing ? (
+          <LintStatus />
+        ) : (
           <p
             className="font-mono text-muted-light tracking-[0.04em]"
             style={{ fontSize: "var(--type-3xs)" }}
           >
             Advocating for the reader.
           </p>
-          {isAnalyzing && (
-            <div className="flex items-center gap-1" role="status" aria-label="Analyzing text">
-              <span className="loading-dot" />
-              <span className="loading-dot" style={{ animationDelay: "0.2s" }} />
-              <span className="loading-dot" style={{ animationDelay: "0.4s" }} />
-            </div>
-          )}
-        </div>
+        )}
       </footer>
     </main>
   );
