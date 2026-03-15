@@ -6,7 +6,7 @@ import type { Editor as TipTapEditor } from "@tiptap/react";
 import Editor from "@/components/editor";
 import EmpathyPopover from "@/components/empathy-popover";
 import LintStatus from "@/components/lint-status";
-import { DEMO_CONTENT, DEMO_FLAGS } from "@/lib/demo-content";
+import { DEMOS } from "@/lib/demo-content";
 import { applyFlags } from "@/lib/apply-flags";
 import { DEBOUNCE_MS } from "@/lib/config";
 import type { EmpathyFlagInput } from "@/lib/schemas";
@@ -24,6 +24,7 @@ export default function Home() {
   const editorRef = useRef<TipTapEditor | null>(null);
   const editorWrapperRef = useRef<HTMLDivElement | null>(null);
   const demoFlagsApplied = useRef(false);
+  const demoIndexRef = useRef(0);
 
   // Ref for tracking which flag the popover is anchored to (avoids closure staleness)
   const popoverPhraseRef = useRef<string | null>(null);
@@ -213,7 +214,7 @@ export default function Home() {
     // Guard against double-application (React strict mode calls effects twice).
     if (!demoFlagsApplied.current) {
       demoFlagsApplied.current = true;
-      applyFlags(editor, DEMO_FLAGS);
+      applyFlags(editor, DEMOS[0].flags);
 
       // Store demo text as the last analyzed text so the debounce guard
       // doesn't re-analyze the pre-loaded content unnecessarily.
@@ -240,20 +241,24 @@ export default function Home() {
   }, []);
 
   /**
-   * Reset to demo content: re-insert the demo text and apply pre-computed flags.
+   * Cycle to the next demo: advance the index and apply the next demo's
+   * content and pre-computed flags.
    */
-  const handleReset = useCallback(() => {
+  const handleNextDemo = useCallback(() => {
     const editor = editorRef.current;
     if (!editor) return;
 
     cancelPendingAnalysis();
 
+    demoIndexRef.current = (demoIndexRef.current + 1) % DEMOS.length;
+    const demo = DEMOS[demoIndexRef.current];
+
     // setContent() triggers onUpdate synchronously, which restarts the
     // debounce timer. Seed the text-change guard after setContent so the
     // debounce guard skips re-analysis of restored demo content.
-    editor.commands.setContent(DEMO_CONTENT);
+    editor.commands.setContent(demo.content);
     lastAnalyzedTextRef.current = editor.getText();
-    applyFlags(editor, DEMO_FLAGS);
+    applyFlags(editor, demo.flags);
     popoverPhraseRef.current = null;
     setPopover(null);
   }, []);
@@ -287,10 +292,10 @@ export default function Home() {
           <button
             type="button"
             className="btn-ghost"
-            onClick={handleReset}
+            onClick={handleNextDemo}
             style={{ fontSize: "var(--type-2xs)" }}
           >
-            Try demo text
+            Try another example
           </button>
         </div>
       </header>
@@ -298,7 +303,7 @@ export default function Home() {
       {/* Editor */}
       <section ref={editorWrapperRef} className="flex-1 hero-enter stagger-1">
         <Editor
-          content={DEMO_CONTENT}
+          content={DEMOS[0].content}
           onUpdate={handleTextUpdate}
           onEditorReady={handleEditorReady}
         />

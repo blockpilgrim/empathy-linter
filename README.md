@@ -8,7 +8,7 @@ Engineers suffer from the curse of knowledge. They write docs full of acronyms, 
 
 Empathy Linter fills that gap. Paste technical writing into the editor, and it quietly analyzes the text in the background, highlighting phrases that might confuse readers outside your immediate team. Click a highlight to see *why* it was flagged and get a constructive suggestion for making it more accessible. Fix the text, and the highlight disappears.
 
-The tool ships with a pre-loaded demo paragraph dense with SRE jargon (gRPC, k8s, circuit breakers, P99 latency, CDC) so the value is visible the moment the page loads — no signup, no configuration.
+The tool ships with four pre-loaded demo texts — DevOps, Product Strategy, Design/UX, and Frontend — each dense with discipline-specific jargon. The first loads automatically so the value is visible the moment the page loads, and a "Try another example" button cycles through the rest. No signup, no configuration.
 
 ## Tech Stack
 
@@ -33,7 +33,7 @@ lib/
   prompts.ts               → System + user prompts calibrated for 3-7 flags per ~200 words
   schemas.ts               → Zod schemas for structured LLM output
   rate-limit.ts            → In-memory IP-based rate limiter
-  demo-content.ts          → Pre-loaded jargon-dense text with pre-computed highlights
+  demo-content.ts          → Four cycling demo texts (Infra, Product, Design, Frontend) with pre-computed highlights
 ```
 
 Key design decisions:
