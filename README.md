@@ -1,30 +1,57 @@
 # Empathy Linter
 
-AI-powered tool that scans technical documentation for assumed knowledge, unexplained jargon, and missing context — advocating for the reader's comprehension.
+An AI-powered writing tool that scans technical documentation for assumed knowledge, unexplained jargon, and missing context — advocating for the reader's comprehension.
 
-## Quick Start
+## What It Does
 
-```bash
-npm install
-cp .env.example .env.local  # Add your ANTHROPIC_API_KEY
-npm run dev                  # http://localhost:3000
-npm test                     # Run tests
-```
+Engineers suffer from the curse of knowledge. They write docs full of acronyms, internal jargon, and assumed prerequisites that make perfect sense to them and no sense to anyone else. Traditional tools catch spelling and grammar — but they don't catch empathy gaps.
+
+Empathy Linter fills that gap. Paste technical writing into the editor, and it quietly analyzes the text in the background, highlighting phrases that might confuse readers outside your immediate team. Click a highlight to see *why* it was flagged and get a constructive suggestion for making it more accessible. Fix the text, and the highlight disappears.
+
+The tool ships with a pre-loaded demo paragraph dense with SRE jargon (gRPC, k8s, circuit breakers, P99 latency, CDC) so the value is visible the moment the page loads — no signup, no configuration.
 
 ## Tech Stack
 
-- **Framework:** Next.js 16 (App Router) on Vercel
-- **Editor:** TipTap (ProseMirror-based) with custom inline Mark extension
-- **AI:** Vercel AI SDK + Anthropic API (Claude Sonnet)
-- **Styling:** Tailwind CSS v4, CSS custom properties
+- **Next.js 16** (App Router) — single-page app, server-side streaming API route
+- **TipTap / ProseMirror** — rich text editor with a custom inline `Mark` extension for highlights (not block nodes — wraps existing text without altering document structure)
+- **Claude Sonnet 4.6** via Vercel AI SDK (`streamObject`) — structured streaming output with a Zod schema, so highlights appear progressively as the LLM identifies them
+- **Zod** — enforces structured LLM output and derives TypeScript types from a single schema definition
+- **Tailwind CSS v4** — design tokens as CSS custom properties, bridged to Tailwind via `@theme`
 
-## How It Works
+## Architecture
 
-1. Write or paste technical documentation into the editor
-2. The system automatically analyzes text for empathy gaps (debounced, ambient)
-3. Flagged phrases are highlighted inline
-4. Click a highlight to see why it was flagged and how to improve it
+```
+app/
+  api/lint/route.ts        → POST endpoint: streams empathy flags via streamObject
+  page.tsx                 → Editor + state management + debounced analysis pipeline
+components/
+  editor.tsx               → TipTap editor wrapper
+  empathy-popover.tsx      → Popover anchored to highlight spans
+lib/
+  empathy-extension.ts     → Custom TipTap Mark (inline highlights with data-* attributes)
+  apply-flags.ts           → Maps LLM output phrases to ProseMirror document positions
+  prompts.ts               → System + user prompts calibrated for 3-7 flags per ~200 words
+  schemas.ts               → Zod schemas for structured LLM output
+  rate-limit.ts            → In-memory IP-based rate limiter
+  demo-content.ts          → Pre-loaded jargon-dense text with pre-computed highlights
+```
 
-## Environment
+Key design decisions:
 
-Requires `ANTHROPIC_API_KEY` in `.env.local`. See `.env.example`.
+- **Streaming, not batch.** `streamObject` sends partial JSON as the LLM generates it. The client accumulates chunks, parses partial objects with `parsePartialJson`, and applies highlights incrementally — so flags appear one by one instead of all at once.
+- **Exact phrase matching.** The LLM returns verbatim substrings. `applyFlags()` builds a text-to-position mapping with a single document walk, then locates each phrase and applies marks in one ProseMirror transaction.
+- **Ambient analysis.** Debounced at 2s after typing stops. Requests are guarded by text-change detection and `AbortController` for in-flight cancellation — no manual "scan" button.
+- **Stateless.** No database, no auth, no persistence. All state lives in the browser session.
+
+## Getting Started
+
+```bash
+npm install
+cp .env.example .env.local   # Add your ANTHROPIC_API_KEY
+npm run dev                   # http://localhost:3000
+npm test                      # Run tests
+```
+
+## Status
+
+Working prototype. Built as an independent project to explore LLM-powered writing tools with streaming structured output and real-time editor integration.
